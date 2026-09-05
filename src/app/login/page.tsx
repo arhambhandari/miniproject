@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
 import { signIn } from "next-auth/react";
@@ -12,6 +12,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const router = useRouter();
+
+  const [isRegistered, setIsRegistered] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && window.location.search.includes("registered=true")) {
+      setIsRegistered(true);
+    }
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,12 +35,10 @@ export default function LoginPage() {
       if (res?.error) {
         toast.error("Invalid credentials");
       } else {
-        toast.success("Logged in successfully");
-        router.push("/dashboard");
-        router.refresh();
+        window.location.href = "/dashboard";
       }
     } catch (err) {
-      toast.error("An error occurred during login");
+      toast.error("Something went wrong");
     } finally {
       setLoading(false);
     }
@@ -46,13 +52,13 @@ export default function LoginPage() {
             <span className="flex size-10 items-center justify-center rounded-xl bg-blue-600 text-white">
               <HeartPulse className="size-6" />
             </span>
-            <span className="font-bold text-xl text-slate-900">MediBook</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900">MediBook</span>
           </Link>
         </div>
         
-        <h2 className="text-2xl font-bold text-slate-900 text-center mb-8">Welcome back</h2>
+        <h2 className="text-2xl font-bold text-center text-slate-900 mb-8">Welcome back</h2>
 
-        {typeof window !== "undefined" && window.location.search.includes("registered=true") && (
+        {isRegistered && (
           <div className="bg-emerald-50 text-emerald-700 p-3 rounded-lg text-sm font-medium mb-6 border border-emerald-100 text-center">
             Registration successful! Please log in.
           </div>

@@ -34,11 +34,11 @@ export async function POST(request: Request) {
       await prisma.doctorProfile.create({
         data: {
           userId: user.id,
-          specialization,
-          hospitalName,
-          contactNumber: "Pending", // Add to form later
-          qualifications: "MD", // Add to form later
-          experience: 5, // Add to form later
+          specialization: data.specialty || "General Practice",
+          hospitalName: hospitalName || "Independent Clinic",
+          contactNumber: "Pending", 
+          qualifications: "MD",
+          experience: 5
         }
       });
     } else {

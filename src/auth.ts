@@ -13,22 +13,26 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "Password", type: "password" }
       },
       async authorize(credentials, req) {
-        if (!credentials?.email || !credentials?.password) return null;
+        if (!credentials?.email) return null;
         
+        // TEMPORARY BYPASS: "let me login by entering any thing"
+        // 1. Try to find if the user actually exists in the database
         const user = await prisma.user.findUnique({
           where: { email: credentials.email as string }
         });
 
-        if (!user || !user.password) return null;
-
-        const bcrypt = require("bcryptjs");
-        const isValid = await bcrypt.compare(credentials.password, user.password);
-
-        if (isValid) {
+        // 2. If they exist, let them in regardless of password
+        if (user) {
           return user;
-        } else {
-          return null;
         }
+
+        // 3. If they don't exist, create a mock session so any email works
+        return {
+          id: "mock_user_" + Math.random().toString(36).substring(7),
+          name: "Demo User",
+          email: credentials.email as string,
+          role: "PATIENT" // default to patient for testing
+        };
       }
     })
   ],

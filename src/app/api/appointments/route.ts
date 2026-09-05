@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import nodemailer from "nodemailer";
 
 // In-memory store for the prototype since Prisma SQLite adapter is having environment issues
 const appointments: any[] = [
@@ -30,10 +31,10 @@ export async function GET() {
   return NextResponse.json({ appointments });
 }
 
-export async function POST(request: Request) {
+export async function POST(req: Request) {
   try {
-    const body = await request.json();
-    const { doctorId, date, startTime, disease } = body;
+    const body = await req.json();
+    const { doctorId, date, startTime, disease, patientName, patientContact, email, fee } = body;
 
     if (!doctorId || !date || !startTime) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
@@ -45,29 +46,59 @@ export async function POST(request: Request) {
 
     const newAppt = {
       id: "mock_appt_" + Math.floor(Math.random() * 1000),
-      patientName: "Test Patient",
+      patientName: patientName || "Test Patient",
       doctorId,
       doctorName,
       specialty,
       date,
       time: startTime,
-      disease,
       status: "Upcoming",
-      fee: "₹1,500"
+      fee: fee || "₹1,500"
     };
 
     appointments.push(newAppt);
 
-    return NextResponse.json({ 
-      message: "Appointment booked successfully!",
-      appointment: newAppt
-    }, { status: 201 });
+    // Simulated Email Sending via Ethereal
+    let emailPreviewUrl = "";
+    try {
+      const testAccount = await nodemailer.createTestAccount();
+      const transporter = nodemailer.createTransport({
+        host: "smtp.ethereal.email",
+        port: 587,
+        secure: false, 
+        auth: {
+          user: testAccount.user, 
+          pass: testAccount.pass, 
+        },
+      });
 
+      const info = await transporter.sendMail({
+        from: '"MediBook" <no-reply@medibook.com>',
+        to: email || "patient@example.com",
+        subject: "Appointment Confirmed - MediBook",
+        html: `
+          <div style="font-family: sans-serif; max-w: 600px; margin: 0 auto;">
+            <h2>Your Appointment is Confirmed! 🎉</h2>
+            <p>Hi ${newAppt.patientName},</p>
+            <p>You are scheduled to see <strong>${doctorName}</strong>.</p>
+            <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
+              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Date:</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${date}</td></tr>
+              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Time:</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">${startTime}</td></tr>
+              <tr><td style="padding: 10px; border-bottom: 1px solid #eee;"><strong>Fee:</strong></td><td style="padding: 10px; border-bottom: 1px solid #eee;">₹1,500</td></tr>
+            </table>
+            <p style="margin-top: 30px; color: #666;">Thank you for using MediBook.</p>
+          </div>
+        `,
+      });
+      emailPreviewUrl = nodemailer.getTestMessageUrl(info) || "";
+      console.log("Preview URL: %s", emailPreviewUrl);
+    } catch (emailErr) {
+      console.error("Email sending failed:", emailErr);
+    }
+
+    return NextResponse.json({ success: true, appointment: newAppt, emailPreviewUrl }, { status: 201 });
   } catch (error) {
-    console.error("Error creating appointment:", error);
-    return NextResponse.json(
-      { error: "Failed to book appointment" },
-      { status: 500 }
-    );
+    console.error("Booking failed:", error);
+    return NextResponse.json({ error: "Failed to book appointment" }, { status: 500 });
   }
 }

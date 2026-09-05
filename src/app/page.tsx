@@ -1,7 +1,11 @@
 "use client";
 
 import Link from "next/link";
+import Script from "next/script";
 import { useState, useEffect } from "react";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/components/LanguageContext";
 import { Calendar, Search, MapPin, Star, Clock, ChevronRight, CheckCircle, Stethoscope, Video, HeartPulse, ChevronDown, ShieldCheck, X, CreditCard, QrCode, CalendarCheck, MessageSquareHeart, Menu } from "lucide-react";
 import { toast } from "sonner";
 
@@ -10,6 +14,7 @@ type Doctor = {
   specialization: string;
   experience: number;
   satisfaction: number;
+  fee?: number;
   nextAvailable: string;
   user: {
     name: string;
@@ -18,6 +23,8 @@ type Doctor = {
 };
 
 export default function Home() {
+  const { t } = useLanguage();
+  
   const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -29,12 +36,14 @@ export default function Home() {
   // Form State
   const [patientName, setPatientName] = useState("");
   const [patientContact, setPatientContact] = useState("");
+  const [patientEmail, setPatientEmail] = useState("");
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("");
   const [disease, setDisease] = useState("");
   const [consultationType, setConsultationType] = useState<"video" | "in-person">("video");
   const [isProcessing, setIsProcessing] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [emailPreview, setEmailPreview] = useState("");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [searchLocation, setSearchLocation] = useState("");
@@ -87,28 +96,77 @@ export default function Home() {
     setIsProcessing(true);
 
     try {
-      const res = await fetch("/api/appointments", {
+      // 1. Create Order
+      const amount = selectedDoctor.fee || 1500;
+      const orderRes = await fetch("/api/payments/create-order", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          doctorId: selectedDoctor.id,
-          date: bookingDate,
-          startTime: bookingTime,
-          disease: disease,
-          patientName,
-          patientContact
-        }),
+        body: JSON.stringify({ amount }),
       });
+      const orderData = await orderRes.json();
 
-      if (res.ok) {
-        setModalStep("success");
-      } else {
-        setModalStep("error");
-      }
+      if (!orderRes.ok) throw new Error(orderData.error || "Order creation failed");
+
+      // 2. Open Razorpay Checkout Modal
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_placeholder", 
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "MediBook",
+        description: `Consultation with ${selectedDoctor.user.name}`,
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          // 3. Finalize Booking on Success
+          try {
+            const res = await fetch("/api/appointments", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                doctorId: selectedDoctor.id,
+                date: bookingDate,
+                startTime: bookingTime,
+                disease: disease,
+                patientName,
+                patientContact,
+                email: patientEmail,
+                fee: `₹${amount.toLocaleString()}`,
+                paymentId: response.razorpay_payment_id
+              }),
+            });
+            
+            if (res.ok) {
+              const data = await res.json();
+              if (data.emailPreviewUrl) setEmailPreview(data.emailPreviewUrl);
+              setModalStep("success");
+            } else {
+              setModalStep("error");
+            }
+          } catch (e) {
+            setModalStep("error");
+          } finally {
+            setIsProcessing(false);
+          }
+        },
+        prefill: {
+          name: patientName,
+          email: patientEmail,
+          contact: patientContact,
+        },
+        theme: {
+          color: "#2563eb",
+        },
+      };
+
+      const rzp = new (window as any).Razorpay(options);
+      rzp.on("payment.failed", function (response: any) {
+        toast.error(`Payment Failed: ${response.error.description}`);
+        setIsProcessing(false);
+      });
+      rzp.open();
+
     } catch (error) {
       console.error("Booking error:", error);
       setModalStep("error");
-    } finally {
       setIsProcessing(false);
     }
   };
@@ -120,12 +178,36 @@ export default function Home() {
     setBookingTime("");
     setPatientName("");
     setPatientContact("");
+    setPatientEmail("");
     setDisease("");
+    setEmailPreview("");
+  };
+
+  const downloadReceipt = async () => {
+    if (!selectedDoctor) return;
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF();
+      doc.setFont("helvetica");
+      doc.setFontSize(22);
+      doc.text("MediBook Receipt", 20, 20);
+      doc.setFontSize(12);
+      doc.text(`Patient: ${patientName}`, 20, 40);
+      doc.text(`Doctor: Dr. ${selectedDoctor.user.name}`, 20, 50);
+      doc.text(`Specialty: ${selectedDoctor.specialization}`, 20, 60);
+      doc.text(`Date: ${bookingDate}`, 20, 70);
+      doc.text(`Time: ${bookingTime}`, 20, 80);
+      doc.text(`Fee: ${selectedDoctor.fee ? `₹${selectedDoctor.fee.toLocaleString()}` : "₹1,500"} INR`, 20, 90);
+      doc.text("Thank you for using MediBook!", 20, 110);
+      doc.save(`receipt-${patientName.replace(/\s+/g, '-')}.pdf`);
+    } catch (err) {
+      console.error("Failed to generate PDF", err);
+    }
   };
 
   return (
     <div className="flex min-h-screen flex-col bg-slate-50 selection:bg-blue-100 selection:text-blue-900">
-      
+      <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="lazyOnload" />
       {/* Header */}
       <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/85 backdrop-blur">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center gap-4 px-4">
@@ -137,14 +219,16 @@ export default function Home() {
           </Link>
           <nav className="ml-4 hidden items-center gap-1 md:flex">
             <Link className="rounded-lg px-3 py-2 text-sm font-medium transition-colors bg-slate-100 text-slate-900" href="/">Home</Link>
-            <a href="#doctors" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900">Find a doctor</a>
+            <a href="#doctors" className="rounded-lg px-3 py-2 text-sm font-medium text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900">{t("find_doctor")}</a>
           </nav>
           <div className="ml-auto flex items-center gap-2">
+            <LanguageSwitcher />
+            <ThemeToggle />
             <Link href="/login" className="hidden sm:inline-flex items-center justify-center rounded-md text-sm font-medium h-9 px-4 py-2 hover:bg-slate-100 text-slate-700 transition-colors">
-              Log in
+              {t("login")}
             </Link>
             <Link href="/register" className="inline-flex items-center justify-center rounded-md text-sm font-medium bg-blue-600 text-white shadow hover:bg-blue-700 h-9 px-4 py-2 transition-colors">
-              Get started
+              {t("get_started")}
             </Link>
             <button 
               className="md:hidden inline-flex items-center justify-center p-2 rounded-md text-slate-500 hover:text-slate-900 hover:bg-slate-100 transition-colors ml-1"
@@ -178,10 +262,10 @@ export default function Home() {
                 Verified doctors · Instant confirmation
               </div>
               <h1 className="text-4xl font-extrabold leading-[1.08] sm:text-5xl lg:text-6xl text-slate-900 tracking-tight">
-                Healthcare appointments, <span className="text-blue-600">without the waiting room</span>
+                {t("hero_title").split(',')[0]}, <span className="text-blue-600">{t("hero_title").split(',')[1]}</span>
               </h1>
               <p className="mt-5 max-w-xl text-lg text-slate-600">
-                Browse specialists near you, see live availability, and lock in a time that works — then keep the conversation going with secure messaging.
+                {t("hero_subtitle")}
               </p>
               
               {/* Search Bar */}
@@ -193,7 +277,7 @@ export default function Home() {
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="flex h-10 w-full rounded-md border border-slate-200 bg-transparent px-3 py-1 text-sm placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent pl-9 transition-shadow" 
-                      placeholder="Doctor name, condition or clinic" 
+                      placeholder={t("search_placeholder")} 
                     />
                   </div>
                   <div className="relative">
@@ -221,7 +305,7 @@ export default function Home() {
                     <ChevronDown className="absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400 pointer-events-none" />
                   </div>
                   <button type="submit" className="inline-flex h-10 items-center justify-center rounded-md bg-blue-600 px-6 text-sm font-medium text-white shadow hover:bg-blue-700 transition-colors">
-                    Search
+                    {t("search_btn")}
                   </button>
                 </div>
               </form>
@@ -297,9 +381,9 @@ export default function Home() {
                 <h2 className="text-3xl font-bold text-slate-900 tracking-tight">Top-rated specialists</h2>
                 <p className="mt-2 text-slate-500 text-lg">A snapshot of clinicians accepting new patients this week.</p>
               </div>
-              <button className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
+              <Link href="/doctors" className="inline-flex h-10 items-center justify-center rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm hover:bg-slate-50 transition-colors">
                 Browse all doctors
-              </button>
+              </Link>
             </div>
 
             <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
@@ -362,7 +446,7 @@ export default function Home() {
                       </p>
                       
                       <div className="mt-6 flex items-center justify-between pt-4 border-t border-slate-100">
-                        <span className="font-bold text-slate-900 text-lg">₹1,500 <span className="text-sm font-normal text-slate-500">/ visit</span></span>
+                        <span className="font-bold text-slate-900 text-lg">{doc.fee ? `₹${doc.fee.toLocaleString()}` : '₹1,500'} <span className="text-sm font-normal text-slate-500">/ visit</span></span>
                         <button 
                           onClick={() => setSelectedDoctor(doc)}
                           className="inline-flex h-9 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white shadow hover:bg-blue-700 transition-colors"
@@ -488,6 +572,14 @@ export default function Home() {
                     </div>
                   </div>
                   <div>
+                    <label className="block text-xs font-semibold text-slate-700 mb-1">EMAIL ADDRESS</label>
+                    <input 
+                      type="email" required value={patientEmail} onChange={(e) => setPatientEmail(e.target.value)}
+                      placeholder="patient@example.com"
+                      className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 text-sm placeholder:text-slate-400"
+                    />
+                  </div>
+                  <div>
                     <label className="block text-xs font-semibold text-slate-700 mb-1">CONSULTATION TYPE</label>
                     <div className="grid grid-cols-2 gap-2">
                       <button
@@ -571,7 +663,7 @@ export default function Home() {
                   <div className="bg-slate-50 p-4 rounded-xl flex justify-between items-center border border-slate-100">
                     <div>
                       <div className="text-xs font-semibold text-slate-500 mb-1">CONSULTATION FEE</div>
-                      <div className="font-bold text-2xl text-slate-900">₹1,500.00</div>
+                      <div className="font-bold text-2xl text-slate-900">{selectedDoctor?.fee ? `₹${selectedDoctor.fee.toLocaleString()}.00` : '₹1,500.00'}</div>
                     </div>
                     <CreditCard className="size-8 text-blue-600/30" />
                   </div>
@@ -664,12 +756,25 @@ export default function Home() {
                     <CalendarCheck className="size-8" />
                   </div>
                   <h4 className="text-2xl font-bold text-slate-900 mb-2">Payment Successful!</h4>
-                  <p className="text-slate-600 mb-8">
+                  <p className="text-slate-600 mb-6">
                     {patientName}, your consultation on <span className="font-semibold text-slate-900">{bookingDate}</span> at <span className="font-semibold text-slate-900">{bookingTime}</span> has been securely booked.
                   </p>
-                  <button onClick={closeModal} className="w-full bg-slate-900 text-white font-medium py-3 rounded-lg hover:bg-slate-800 transition-colors shadow-sm">
-                    Return to Directory
-                  </button>
+                  {emailPreview && (
+                    <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-8 text-sm">
+                      <p className="text-blue-800 font-medium mb-2">A confirmation email was sent!</p>
+                      <a href={emailPreview} target="_blank" rel="noopener noreferrer" className="text-blue-600 underline hover:text-blue-700">
+                        View Email Preview (Ethereal)
+                      </a>
+                    </div>
+                  )}
+                  <div className="flex gap-3">
+                    <button onClick={downloadReceipt} className="w-1/2 border border-slate-300 text-slate-700 font-medium py-3 rounded-lg hover:bg-slate-50 transition-colors shadow-sm">
+                      Download Receipt
+                    </button>
+                    <button onClick={closeModal} className="w-1/2 bg-slate-900 text-white font-medium py-3 rounded-lg hover:bg-slate-800 transition-colors shadow-sm">
+                      Done
+                    </button>
+                  </div>
                 </div>
               )}
 
