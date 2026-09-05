@@ -2,12 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { HeartPulse, User, Stethoscope } from "lucide-react";
+import { HeartPulse } from "lucide-react";
 import { toast } from "sonner";
+import { useRouter } from "next/navigation";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
 
 export default function RegisterPage() {
   const [role, setRole] = useState<"patient" | "doctor">("patient");
   const [loading, setLoading] = useState(false);
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -39,7 +43,7 @@ export default function RegisterPage() {
         })
       });
       if (res.ok) {
-        window.location.href = "/login?registered=true";
+        router.push("/login?registered=true");
       } else {
         const errorData = await res.json();
         toast.error(errorData.error || "Registration failed");
@@ -53,56 +57,69 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl border border-slate-100 p-8">
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900 p-4 py-12">
+      <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-3xl shadow-xl border border-slate-100 dark:border-slate-700 p-8">
         <div className="flex justify-center mb-6">
           <Link href="/" className="flex items-center gap-2">
             <span className="flex size-10 items-center justify-center rounded-xl bg-blue-600 text-white">
               <HeartPulse className="size-6" />
             </span>
-            <span className="font-bold text-xl text-slate-900">MediBook</span>
+            <span className="font-bold text-xl text-slate-900 dark:text-white">MediBook</span>
           </Link>
         </div>
         
-        <h2 className="text-2xl font-bold text-slate-900 text-center mb-6">Create an account</h2>
+        <h2 className="text-2xl font-bold text-slate-900 dark:text-white text-center mb-6">Create an account</h2>
 
-        {/* Role Toggle */}
-        <div className="flex bg-slate-100 p-1 rounded-lg mb-8">
+        <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-xl mb-8 border border-slate-200 dark:border-slate-800">
           <button 
             type="button"
             onClick={() => setRole("patient")}
-            className={`flex-1 py-2 text-sm font-semibold rounded-md transition-colors ${role === "patient" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${role === "patient" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
           >
             I'm a Patient
           </button>
           <button 
             type="button"
             onClick={() => setRole("doctor")}
-            className={`flex-1 py-2 text-sm font-semibold rounded-md transition-colors ${role === "doctor" ? "bg-white text-slate-900 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+            className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${role === "doctor" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
           >
             I'm a Doctor
           </button>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">FULL NAME</label>
-            <input type="text" name="name" value={formData.name} onChange={handleChange} required placeholder={role === "doctor" ? "Dr. Jane Doe" : "Jane Doe"} className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">EMAIL ADDRESS</label>
-            <input type="email" name="email" value={formData.email} onChange={handleChange} required placeholder="jane@example.com" className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm" />
-          </div>
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">PASSWORD</label>
-            <input type="password" name="password" value={formData.password} onChange={handleChange} required placeholder="••••••••" className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm" />
-          </div>
+          <Input 
+            label="FULL NAME"
+            name="name" 
+            value={formData.name} 
+            onChange={handleChange} 
+            required 
+            placeholder={role === "doctor" ? "Dr. Jane Doe" : "Jane Doe"} 
+          />
+          <Input 
+            label="EMAIL ADDRESS"
+            type="email" 
+            name="email" 
+            value={formData.email} 
+            onChange={handleChange} 
+            required 
+            placeholder="jane@example.com" 
+          />
+          <Input 
+            label="PASSWORD"
+            type="password" 
+            name="password" 
+            value={formData.password} 
+            onChange={handleChange} 
+            required 
+            placeholder="••••••••" 
+          />
 
           {role === "doctor" && (
-            <>
+            <div className="space-y-4 pt-2 border-t border-slate-100 dark:border-slate-700 mt-4">
               <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">WHAT KIND OF DOCTOR ARE YOU? (SPECIALTY)</label>
-                <select name="specialty" value={formData.specialty} onChange={handleChange} required className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm">
+                <label htmlFor="specialty" className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1.5">WHAT KIND OF DOCTOR ARE YOU? (SPECIALTY)</label>
+                <select id="specialty" name="specialty" value={formData.specialty} onChange={handleChange} required className="w-full flex h-11 rounded-xl border border-slate-300 bg-white px-4 py-2 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
                   <option value="">Select specialty...</option>
                   <option value="cardiology">Cardiology</option>
                   <option value="dermatology">Dermatology</option>
@@ -110,24 +127,34 @@ export default function RegisterPage() {
                   <option value="oncology">Oncology</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">HOSPITAL OR CLINIC NAME</label>
-                <input type="text" name="hospitalName" value={formData.hospitalName} onChange={handleChange} required placeholder="General Hospital" className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm" />
-              </div>
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">CLINIC LOCATION (CITY/ZIP)</label>
-                <input type="text" name="location" value={formData.location} onChange={handleChange} required placeholder="New York, NY 10001" className="w-full border border-slate-200 rounded-lg p-2.5 focus:outline-none focus:ring-2 focus:ring-blue-600 text-sm" />
-              </div>
-            </>
+              <Input 
+                label="HOSPITAL OR CLINIC NAME"
+                name="hospitalName" 
+                value={formData.hospitalName} 
+                onChange={handleChange} 
+                required 
+                placeholder="General Hospital" 
+              />
+              <Input 
+                label="CLINIC LOCATION (CITY/ZIP)"
+                name="location" 
+                value={formData.location} 
+                onChange={handleChange} 
+                required 
+                placeholder="New York, NY 10001" 
+              />
+            </div>
           )}
 
-          <button disabled={loading} type="submit" className="w-full bg-blue-600 text-white font-medium py-3 rounded-lg hover:bg-blue-700 transition-colors mt-6 disabled:opacity-50">
-            {loading ? "Creating account..." : "Register"}
-          </button>
+          <div className="pt-4">
+            <Button disabled={loading} type="submit" className="w-full" size="lg">
+              {loading ? "Creating account..." : "Register"}
+            </Button>
+          </div>
         </form>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
-          Already have an account? <Link href="/login" className="text-blue-600 hover:underline">Log in</Link>
+        <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
+          Already have an account? <Link href="/login" className="text-blue-600 dark:text-blue-400 hover:underline">Log in</Link>
         </p>
       </div>
     </div>

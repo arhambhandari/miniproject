@@ -9,11 +9,11 @@ export function LanguageSwitcher() {
   return (
     <select
       value={language}
-      onChange={(e) => setLanguage(e.target.value as "en" | "es")}
+      onChange={(e) => setLanguage(e.target.value as "en" | "hi")}
       className="bg-transparent border-none text-sm font-medium text-slate-500 hover:text-slate-900 focus:outline-none focus:ring-0 px-2 appearance-none cursor-pointer"
     >
       <option value="en">EN</option>
-      <option value="es">ES</option>
+      <option value="hi">HI</option>
     </select>
   );
 }

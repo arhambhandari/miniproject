@@ -1,18 +1,44 @@
 import { NextResponse } from "next/server";
 import Razorpay from "razorpay";
+import { auth } from "@/auth";
+
+// Server-side fee lookup — NEVER trust the client amount
+const DOCTOR_FEES: Record<string, number> = {
+  doc_1: 2000,
+  doc_2: 3500,
+  doc_3: 1500,
+  doc_4: 2500,
+  doc_5: 1200,
+  doc_6: 1800,
+};
 
 export async function POST(req: Request) {
-  try {
-    const { amount } = await req.json();
+  // Auth check — only logged-in users can create orders
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
 
-    // Initialize Razorpay
-    // If keys are missing, we will fallback to a simulated response so the app doesn't crash
+  try {
+    const { doctorId } = await req.json();
+
+    if (!doctorId || typeof doctorId !== "string") {
+      return NextResponse.json({ error: "Doctor ID is required" }, { status: 400 });
+    }
+
+    // Look up fee SERVER-SIDE — prevents price tampering
+    const amount = DOCTOR_FEES[doctorId];
+    if (!amount) {
+      return NextResponse.json({ error: "Invalid doctor" }, { status: 400 });
+    }
+
+    // If Razorpay keys are missing, simulate for development
     if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
-      console.warn("Razorpay keys missing in .env, simulating order...");
+      console.warn("Razorpay keys missing — simulating order");
       return NextResponse.json({
         id: `mock_order_${Date.now()}`,
         currency: "INR",
-        amount: amount * 100, // amount in paise
+        amount: amount * 100,
       });
     }
 
@@ -21,17 +47,15 @@ export async function POST(req: Request) {
       key_secret: process.env.RAZORPAY_KEY_SECRET,
     });
 
-    const options = {
-      amount: amount * 100, // amount in smallest currency unit (paise for INR)
+    const order = await razorpay.orders.create({
+      amount: amount * 100, // paise
       currency: "INR",
-      receipt: `receipt_${Date.now()}`,
-    };
+      receipt: `rcpt_${session.user.id}_${Date.now()}`,
+    });
 
-    const order = await razorpay.orders.create(options);
-    
     return NextResponse.json(order);
-  } catch (error: any) {
-    console.error("Razorpay Error:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+  } catch (error) {
+    console.error("Payment order error:", error);
+    return NextResponse.json({ error: "Could not create payment order" }, { status: 500 });
   }
 }

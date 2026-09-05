@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { HeartPulse, CalendarCheck, Clock, User, LogOut, XCircle } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { toast } from "sonner";
 
 // Mock data for the dashboard to demonstrate the UI
@@ -70,9 +71,9 @@ export default function DashboardPage() {
               <User className="size-4" />
               Patient Dashboard
             </div>
-            <Link href="/" className="text-slate-400 hover:text-red-500 transition-colors">
+            <button onClick={() => signOut({ callbackUrl: "/" })} className="text-slate-400 hover:text-red-500 transition-colors cursor-pointer">
               <LogOut className="size-5" />
-            </Link>
+            </button>
           </div>
         </div>
       </header>

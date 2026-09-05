@@ -26,12 +26,24 @@ const appointments: any[] = [
     fee: "₹2,000"
   }
 ];
+import { auth } from "@/auth";
 
 export async function GET() {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // TODO: Filter appointments by session.user.id
   return NextResponse.json({ appointments });
 }
 
 export async function POST(req: Request) {
+  const session = await auth();
+  if (!session?.user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const body = await req.json();
     const { doctorId, date, startTime, disease, patientName, patientContact, email, fee } = body;
