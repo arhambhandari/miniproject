@@ -1,42 +1,47 @@
 import { NextResponse } from "next/server";
-import { auth } from "@/auth";
 import crypto from "crypto";
 
 export async function POST(req: Request) {
-  const session = await auth();
-  if (!session?.user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
   try {
     const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = await req.json();
 
-    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-      return NextResponse.json({ error: "Missing payment verification data" }, { status: 400 });
+    if (!razorpay_order_id || !razorpay_payment_id) {
+      return NextResponse.json({ error: "Missing payment verification parameters" }, { status: 400 });
     }
 
-    // In test/mock mode, accept mock payments
-    if (!process.env.RAZORPAY_KEY_SECRET) {
-      if (razorpay_order_id.startsWith("mock_order_")) {
-        return NextResponse.json({ verified: true });
-      }
-      return NextResponse.json({ error: "Payment verification unavailable" }, { status: 500 });
+    const keySecret = process.env.RAZORPAY_KEY_SECRET;
+    const isPlaceholder =
+      !keySecret ||
+      keySecret.includes("PASTE_YOUR_KEY") ||
+      keySecret.includes("YOUR_KEY_SECRET");
+
+    // Handle mock / simulated orders in development
+    if (isPlaceholder || razorpay_order_id.startsWith("mock_order_")) {
+      return NextResponse.json({ verified: true, isSimulated: true });
     }
 
-    // Verify signature using HMAC SHA256
-    const body = razorpay_order_id + "|" + razorpay_payment_id;
+    if (!razorpay_signature) {
+      return NextResponse.json({ error: "Missing Razorpay payment signature" }, { status: 400 });
+    }
+
+    // Verify signature using HMAC SHA256 as required by Razorpay
+    const body = `${razorpay_order_id}|${razorpay_payment_id}`;
     const expectedSignature = crypto
-      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .createHmac("sha256", keySecret)
       .update(body)
       .digest("hex");
 
     if (expectedSignature !== razorpay_signature) {
+      console.error("Razorpay signature mismatch:", { expected: expectedSignature, received: razorpay_signature });
       return NextResponse.json({ error: "Invalid payment signature" }, { status: 400 });
     }
 
-    return NextResponse.json({ verified: true });
-  } catch (error) {
+    return NextResponse.json({ verified: true, isSimulated: false });
+  } catch (error: any) {
     console.error("Payment verification error:", error);
-    return NextResponse.json({ error: "Verification failed" }, { status: 500 });
+    return NextResponse.json(
+      { error: error?.message || "Payment verification failed" },
+      { status: 500 }
+    );
   }
 }

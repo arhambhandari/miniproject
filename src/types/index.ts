@@ -12,6 +12,7 @@ export type Doctor = {
   experience: number;
   satisfaction: number;
   fee?: number;
+  hospitalName?: string;
   nextAvailable: string;
   user: {
     name: string;

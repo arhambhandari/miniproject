@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Sparkles, Calendar } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface WelcomeBannerProps {
   userName?: string;
@@ -35,7 +36,13 @@ export function WelcomeBanner({
   }, []);
 
   return (
-    <div className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white p-6 sm:p-8 shadow-xl shadow-blue-600/15">
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: false, amount: 0.2 }}
+      transition={{ duration: 0.6, ease: "easeOut" }}
+      className="relative overflow-hidden rounded-[28px] bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 text-white p-6 sm:p-8 shadow-xl shadow-blue-600/15"
+    >
       {/* Background Decorative Medical Geometry */}
       <div className="absolute inset-0 pointer-events-none">
         <svg
@@ -51,12 +58,21 @@ export function WelcomeBanner({
 
       <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6">
         {/* Left: Greeting & Badges */}
-        <div className="space-y-4 max-w-lg">
-          {/* Date / Time Badge matching the image: [Apr 13, 2026 | 2:15 pm] */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-white/90 border border-white/20 shadow-sm">
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          whileInView={{ opacity: 1, x: 0 }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.5, delay: 0.1 }}
+          className="space-y-4 max-w-lg"
+        >
+          {/* Date / Time Badge */}
+          <motion.div
+            whileHover={{ scale: 1.03 }}
+            className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-white/90 border border-white/20 shadow-sm cursor-default"
+          >
             <Calendar className="size-3.5 text-blue-200" />
             <span>{currentDateTime || "Today • Schedule Active"}</span>
-          </div>
+          </motion.div>
 
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
@@ -72,23 +88,40 @@ export function WelcomeBanner({
           </div>
 
           <div className="flex items-center gap-3 pt-1">
-            <div className="flex items-center gap-1.5 text-xs text-blue-100 bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/10">
-              <Sparkles className="size-3.5 text-amber-300" />
+            <motion.div
+              whileHover={{ scale: 1.03 }}
+              className="flex items-center gap-1.5 text-xs text-blue-100 bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/10 cursor-default"
+            >
+              <Sparkles className="size-3.5 text-amber-300 animate-spin" style={{ animationDuration: "8s" }} />
               <span>All vital health records synced</span>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Right: Friendly Doctor Vector Illustration matching reference screenshot */}
-        <div className="relative shrink-0 hidden sm:flex items-center justify-center pr-2">
-          <div className="relative size-36 lg:size-44">
-            {/* Soft backdrop halo */}
-            <div className="absolute inset-0 bg-white/10 rounded-full blur-xl transform scale-90" />
+        {/* Right: Friendly Doctor Vector Illustration with floating bobbing & radiant aura */}
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: false, amount: 0.2 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+          className="relative shrink-0 hidden sm:flex items-center justify-center pr-2"
+        >
+          <motion.div
+            animate={{ y: [0, -8, 0] }}
+            transition={{ repeat: Infinity, duration: 4, ease: "easeInOut" }}
+            className="relative size-36 lg:size-44"
+          >
+            {/* Soft backdrop pulsing halo */}
+            <motion.div
+              animate={{ scale: [0.9, 1.15, 0.9], opacity: [0.2, 0.45, 0.2] }}
+              transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
+              className="absolute inset-0 bg-white/20 rounded-full blur-2xl transform"
+            />
             
             {/* Custom high-res SVG Doctor Graphic matching reference artwork */}
             <svg
               viewBox="0 0 200 200"
-              className="w-full h-full drop-shadow-xl"
+              className="w-full h-full drop-shadow-2xl relative z-10"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
             >
@@ -160,15 +193,15 @@ export function WelcomeBanner({
               <line x1="133" y1="144" x2="150" y2="144" stroke="#CBD5E0" strokeWidth="2" strokeLinecap="round" />
               <line x1="133" y1="152" x2="146" y2="152" stroke="#CBD5E0" strokeWidth="2" strokeLinecap="round" />
 
-              {/* Floating Mini Pill & Medical Cross Badges */}
+              {/* Floating Mini Medical Cross Badge */}
               <g className="animate-bounce" style={{ animationDuration: "3s" }}>
                 <circle cx="44" cy="90" r="16" fill="#FFFFFF" fillOpacity="0.95" />
                 <path d="M44 82V98M36 90H52" stroke="#3182CE" strokeWidth="3.5" strokeLinecap="round" />
               </g>
             </svg>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

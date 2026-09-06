@@ -27,6 +27,7 @@ const appointments: any[] = [
   }
 ];
 import { auth } from "@/auth";
+import { MOCK_DOCTORS } from "@/lib/data";
 
 export async function GET() {
   const session = await auth();
@@ -52,9 +53,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    // Mock doctor details for the prototype
-    const doctorName = doctorId === "doc_1" ? "Dr. Elena Rostova" : "Dr. Marcus Vance";
-    const specialty = doctorId === "doc_1" ? "Neuro-Oncology" : "Surgical Oncology";
+    const doctor = MOCK_DOCTORS.find((d) => d.id === doctorId);
+    const doctorName = doctor?.user?.name || (doctorId === "doc_1" ? "Dr. Elena Rostova" : "Dr. Marcus Vance");
+    const specialty = doctor?.specialization || "General Medicine";
+    const apptFee = fee || (doctor?.fee ? `₹${doctor.fee.toLocaleString()}` : "₹1,500");
 
     const newAppt = {
       id: "mock_appt_" + Math.floor(Math.random() * 1000),
@@ -65,7 +67,8 @@ export async function POST(req: Request) {
       date,
       time: startTime,
       status: "Upcoming",
-      fee: fee || "₹1,500"
+      fee: apptFee,
+      paymentId: body.paymentId || undefined,
     };
 
     appointments.push(newAppt);

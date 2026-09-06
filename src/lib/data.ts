@@ -38,7 +38,7 @@ export const MOCK_DOCTORS = [
     nextAvailable: "OCT 15", fee: 1500,
     user: {
       name: "Dr. Sarah Chen",
-      image: "https://images.unsplash.com/photo-1594824436998-058b233a0ec2?auto=format&fit=crop&q=80&w=400"
+      image: "https://images.unsplash.com/photo-1594824476967-48c8b964273f?auto=format&fit=crop&q=80&w=400"
     }
   },
   {
@@ -80,7 +80,7 @@ export const MOCK_DOCTORS = [
     nextAvailable: "OCT 10", fee: 1800,
     user: {
       name: "Dr. Michael Chang",
-      image: "https://images.unsplash.com/photo-1537368910025-702800a95136?auto=format&fit=crop&q=80&w=400"
+      image: "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400"
     }
   }
 ];

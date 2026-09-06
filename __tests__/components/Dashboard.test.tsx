@@ -47,4 +47,63 @@ describe("Dashboard Components", () => {
     expect(screen.getByText("Follow-up Meetings")).toBeInTheDocument();
     expect(screen.getByText("Add plan")).toBeInTheDocument();
   });
+
+  it("allows toggling time range dropdown and switching period in PlansCard", () => {
+    const { fireEvent } = require("@testing-library/react");
+    render(<PlansCard />);
+
+    // Click the time range dropdown button
+    const toggleButton = screen.getByRole("button", { name: /today/i });
+    fireEvent.click(toggleButton);
+
+    // Check that dropdown menu appeared with options
+    expect(screen.getByText("This Week")).toBeInTheDocument();
+    expect(screen.getByText("This Month")).toBeInTheDocument();
+
+    // Select 'This Week'
+    fireEvent.click(screen.getByText("This Week"));
+
+    // Verify 'This Week' is now active
+    expect(screen.getAllByText("This Week").length).toBeGreaterThan(0);
+    // Verify updated completion text for This Week (e.g. 9 of 11 completed)
+    expect(screen.getByText("9 of 11 completed")).toBeInTheDocument();
+  });
+
+  it("renders RightPanel with dynamic calendar and today's schedule", () => {
+    const today = new Date();
+    const todayFormatted = today.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    const mockAppointments = [
+      {
+        id: "app_test_1",
+        patientName: "Rahul Sharma",
+        doctorId: "doc_1",
+        doctorName: "Dr. Elena Rostova",
+        specialty: "Neuro-Oncology",
+        date: todayFormatted,
+        time: "10:00 AM",
+        status: "Upcoming" as const,
+        fee: "₹1,500",
+      },
+    ];
+
+    const { RightPanel } = require("@/components/dashboard/RightPanel");
+    render(
+      <RightPanel
+        userName="Rahul Sharma"
+        userEmail="rahul@example.com"
+        appointments={mockAppointments}
+      />
+    );
+
+    expect(screen.getByText("My Profile")).toBeInTheDocument();
+    expect(screen.getByText("My Calendar")).toBeInTheDocument();
+    expect(screen.getByText("Consultation with Dr. Elena Rostova")).toBeInTheDocument();
+    expect(screen.getByText("Neuro-Oncology")).toBeInTheDocument();
+    expect(screen.getByText("10:00 AM")).toBeInTheDocument();
+  });
 });
