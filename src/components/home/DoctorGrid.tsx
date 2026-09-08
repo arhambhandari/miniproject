@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { useLanguage } from "../LanguageContext";
 import Image from "next/image";
-import { Star, MapPin, Clock, ArrowRight } from "lucide-react";
+import Link from "next/link";
+import { Star, MapPin, Clock, ArrowRight, UserCheck } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { motion } from "framer-motion";
@@ -54,17 +55,30 @@ export function DoctorGrid({ onBook, searchQuery = "", onClearSearch }: DoctorGr
               Top Specialists
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mt-3 flex items-baseline gap-2">
-              {t("doctors_title")}
+              {t("doctors_title")}{" "}
+              <span className="text-sm font-normal text-slate-500 dark:text-slate-400">(for example)</span>
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t("doctors_subtitle")}</p>
           </div>
-          <Button 
-            variant="outline" 
-            onClick={() => onClearSearch?.()}
-            className="hidden sm:inline-flex hover:scale-[1.02] transition-transform cursor-pointer"
-          >
-            {t("view_all")}
-          </Button>
+          <div className="flex items-center gap-2 sm:gap-3">
+            {searchQuery.trim() && onClearSearch && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={() => onClearSearch?.()}
+                className="hover:scale-[1.02] transition-transform cursor-pointer text-xs"
+              >
+                Clear Search
+              </Button>
+            )}
+            <Link 
+              href="/doctors"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 hover:scale-[1.02] transition-all shadow-xs cursor-pointer"
+            >
+              <span>{t("view_all")}</span>
+              <ArrowRight className="size-3.5 text-blue-600 dark:text-blue-400" />
+            </Link>
+          </div>
         </motion.div>
 
         {/* Active Filter Pill */}
@@ -124,28 +138,50 @@ export function DoctorGrid({ onBook, searchQuery = "", onClearSearch }: DoctorGr
               >
                 <Card className="p-4 hover:shadow-xl hover:-translate-y-1.5 border-slate-200/80 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-500/50 transition-all duration-300 group">
                   <div className="flex gap-4">
-                    <div className="overflow-hidden rounded-xl size-24 shrink-0 ring-2 ring-slate-100 dark:ring-slate-800 group-hover:ring-blue-200 transition-all">
-                      <Image
-                        src={doctor.user.image}
-                        alt={doctor.user.name}
-                        width={96}
-                        height={96}
-                        className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
-                      />
-                    </div>
-                    <div>
-                      <h3 className="font-extrabold text-base text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                        {doctor.user.name}
-                      </h3>
+                    <Link
+                      href={`/doctors/${doctor.id}`}
+                      className="overflow-hidden rounded-xl size-24 shrink-0 ring-2 ring-slate-100 dark:ring-slate-800 group-hover:ring-blue-300 transition-all block relative"
+                      title={`View Dr. ${doctor.user.name}'s profile`}
+                    >
+                      {doctor.user.image ? (
+                        <Image
+                          src={doctor.user.image}
+                          alt={doctor.user.name}
+                          width={96}
+                          height={96}
+                          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-extrabold flex items-center justify-center text-2xl select-none">
+                          {doctor.user.name ? doctor.user.name.replace(/^Dr\.\s*/i, "").charAt(0).toUpperCase() : "D"}
+                        </div>
+                      )}
+                    </Link>
+                    <div className="flex-1 min-w-0">
+                      <Link href={`/doctors/${doctor.id}`} className="block group/link">
+                        <h3 className="font-extrabold text-base text-slate-900 dark:text-white group-hover/link:text-blue-600 dark:group-hover/link:text-blue-400 transition-colors truncate">
+                          {doctor.user.name}
+                        </h3>
+                      </Link>
                       <p className="text-xs text-blue-600 dark:text-blue-400 font-bold mb-2">
                         {doctor.specialization}
                       </p>
-                      <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-400">
-                        <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                        <span className="font-bold text-slate-800 dark:text-slate-200">4.9</span>
-                        <span className="text-[10px] text-slate-400 font-normal">
-                          ({Math.floor(doctor.experience * 12.5)} reviews)
-                        </span>
+                      <div className="flex items-center gap-1 text-xs font-medium text-slate-600 dark:text-slate-400 flex-wrap">
+                        {doctor.reviews && doctor.reviews.length > 0 ? (
+                          <>
+                            <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                            <span className="font-bold text-slate-800 dark:text-slate-200">
+                              {(doctor.reviews.reduce((acc: number, r: any) => acc + (r.rating || 5), 0) / doctor.reviews.length).toFixed(1)}
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-normal">
+                              ({doctor.reviews.length} reviews)
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-[11px] text-slate-400 font-medium">
+                            No reviews yet
+                          </span>
+                        )}
                         <span className="text-slate-300 dark:text-slate-600 mx-1">•</span>
                         <span>{doctor.experience} yrs</span>
                       </div>
@@ -157,32 +193,53 @@ export function DoctorGrid({ onBook, searchQuery = "", onClearSearch }: DoctorGr
                       <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                         <MapPin className="size-4" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-slate-400">{t("location")}</p>
-                        <p className="font-medium text-slate-900 dark:text-slate-300 truncate max-w-[100px]">Clinic</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-300 truncate" title={doctor.hospitalName || "Hospital OPD"}>
+                          {doctor.hospitalName || "Hospital OPD"}
+                        </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                       <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-900/30 flex items-center justify-center text-blue-600 dark:text-blue-400">
                         <Clock className="size-4" />
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-xs text-slate-400">{t("available")}</p>
-                        <p className="font-medium text-slate-900 dark:text-slate-300">{doctor.nextAvailable}</p>
+                        <p className="font-medium text-slate-900 dark:text-slate-300 truncate">{doctor.nextAvailable}</p>
                       </div>
                     </div>
                   </div>
 
-                  <Button
-                    className="w-full group/btn relative overflow-hidden transition-all shadow-sm hover:shadow-blue-500/20 active:scale-[0.99] cursor-pointer"
-                    onClick={() => onBook(doctor)}
-                  >
-                    <span>{t("book_appointment")} - ₹{doctor.fee ? doctor.fee.toLocaleString() : "1,500"}</span>
-                  </Button>
+                  <div className="flex gap-2">
+                    <Link
+                      href={`/doctors/${doctor.id}`}
+                      className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-950/40 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:text-blue-600 dark:hover:text-blue-400 text-center flex items-center justify-center transition-all cursor-pointer whitespace-nowrap"
+                    >
+                      About & Reviews
+                    </Link>
+                    <Button
+                      className="flex-1 group/btn relative overflow-hidden transition-all shadow-sm hover:shadow-blue-500/20 active:scale-[0.99] cursor-pointer text-xs py-2"
+                      onClick={() => onBook(doctor)}
+                    >
+                      <span className="truncate">{t("book_appointment")} - ₹{doctor.fee ? doctor.fee.toLocaleString() : "1,500"}</span>
+                    </Button>
+                  </div>
                 </Card>
               </motion.div>
             ))
           )}
+        </div>
+
+        {/* Bottom Explorer Link */}
+        <div className="mt-12 text-center">
+          <Link
+            href="/doctors"
+            className="inline-flex items-center gap-2 px-6 py-3 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/80 dark:hover:bg-slate-800 font-bold text-sm text-slate-800 dark:text-slate-200 transition-all hover:scale-[1.01] shadow-xs cursor-pointer border border-slate-200 dark:border-slate-700"
+          >
+            <span>{t("view_all")} — Browse Complete Medical Directory</span>
+            <ArrowRight className="size-4 text-blue-600 dark:text-blue-400" />
+          </Link>
         </div>
       </div>
     </section>

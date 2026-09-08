@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import {
   CalendarCheck,
@@ -14,17 +15,30 @@ import {
   IndianRupee,
   ChevronRight,
   ShieldCheck,
+  Building2,
+  QrCode,
   X,
+  Star,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { StatCards } from "@/components/dashboard/StatCards";
+import { PatientVitalsCard } from "@/components/dashboard/PatientVitalsCard";
+import { LiveOPDQueueTracker } from "@/components/dashboard/LiveOPDQueueTracker";
+import { DailyMedicationTracker } from "@/components/dashboard/DailyMedicationTracker";
+import { DigitalOPDPassModal } from "@/components/dashboard/DigitalOPDPassModal";
 import { PlansCard } from "@/components/dashboard/PlansCard";
 import { RightPanel } from "@/components/dashboard/RightPanel";
 import { BookingModal } from "@/components/home/BookingModal";
+import { WriteReviewModal } from "@/components/dashboard/WriteReviewModal";
+import { MedicalRecordsView } from "@/components/dashboard/MedicalRecordsView";
+import { ConsultationsView } from "@/components/dashboard/ConsultationsView";
+import { NotificationsView } from "@/components/dashboard/NotificationsView";
+import { SettingsView } from "@/components/dashboard/SettingsView";
 import { MOCK_DOCTORS } from "@/lib/data";
+import { useLanguage } from "@/components/LanguageContext";
 import type { Appointment, Doctor } from "@/types";
 
 // Initial default appointments matching landing page doctors with dynamic dates
@@ -44,50 +58,64 @@ const getInitialAppointments = (): Appointment[] => {
       id: "app_1",
       patientName: "Rahul Sharma",
       doctorId: "doc_1",
-      doctorName: "Dr. Elena Rostova",
+      doctorName: "Dr. Aarav Mehta",
       specialty: "Neuro-Oncology",
       date: formatDate(0), // Today
       time: "10:00 AM",
       status: "Upcoming",
-      fee: "₹1,500",
+      fee: "₹2,000",
+      hospitalName: "AIIMS Super Specialty Hospital, New Delhi",
+      roomNumber: "OPD Chamber 304",
+      tokenNumber: "Token #A-08",
     },
     {
       id: "app_2",
       patientName: "Rahul Sharma",
       doctorId: "doc_2",
-      doctorName: "Dr. Marcus Vance",
+      doctorName: "Dr. Vikramaditya Rathore",
       specialty: "Surgical Oncology",
-      date: formatDate(0), // Today
+      date: formatDate(-3), // 3 days ago
       time: "02:30 PM",
-      status: "Upcoming",
-      fee: "₹2,000",
+      status: "Completed",
+      fee: "₹2,500",
+      hospitalName: "Tata Memorial Centre, Mumbai",
+      roomNumber: "OPD Room 112",
+      tokenNumber: "Token #B-14",
     },
     {
       id: "app_3",
       patientName: "Rahul Sharma",
-      doctorId: "doc_3",
-      doctorName: "Dr. Sophia Chen",
+      doctorId: "doc_6",
+      doctorName: "Dr. Rohan Banerjee",
       specialty: "Pediatric Care",
       date: formatDate(2), // 2 days from now
       time: "09:30 AM",
       status: "Upcoming",
-      fee: "₹1,200",
+      fee: "₹1,500",
+      hospitalName: "Medanta – The Medicity, Gurugram",
+      roomNumber: "Pediatric Wing Room 205",
+      tokenNumber: "Token #C-05",
     },
     {
       id: "app_4",
       patientName: "Rahul Sharma",
       doctorId: "doc_4",
-      doctorName: "Dr. James Wilson",
+      doctorName: "Dr. Rajesh Iyer",
       specialty: "Cardiology",
       date: formatDate(-3), // 3 days ago
       time: "11:00 AM",
       status: "Completed",
-      fee: "₹2,500",
+      fee: "₹2,200",
+      hospitalName: "Fortis Escorts Heart Institute, New Delhi",
+      roomNumber: "Cardiology Suite 201",
+      tokenNumber: "Token #D-02",
     },
   ];
 };
 
 export default function DashboardPage() {
+  const router = useRouter();
+  const { language, t } = useLanguage();
   const [appointments, setAppointments] = useState<Appointment[]>(getInitialAppointments);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
@@ -103,11 +131,22 @@ export default function DashboardPage() {
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [bookingInitialDate, setBookingInitialDate] = useState<string | undefined>(undefined);
 
+  // Digital OPD Pass modal state
+  const [selectedPassAppointment, setSelectedPassAppointment] = useState<Appointment | null>(null);
+
+  // Write Review modal state
+  const [reviewingAppointment, setReviewingAppointment] = useState<Appointment | null>(null);
+  const [reviewedAppointmentIds, setReviewedAppointmentIds] = useState<string[]>([]);
+
   useEffect(() => {
     // Fetch logged in session if available
     fetch("/api/auth/session")
       .then((res) => res.json())
       .then((data) => {
+        if (data?.user?.role === "DOCTOR") {
+          router.replace("/doctor/dashboard");
+          return;
+        }
         if (data?.user?.name) {
           setUserName(data.user.name);
         } else if (data?.user?.email) {
@@ -168,7 +207,12 @@ export default function DashboardPage() {
     );
   });
 
-  const upcomingAppointments = appointments.filter((a) => a.status === "Upcoming");
+  const upcomingAppointments = appointments.filter(
+    (a) =>
+      a.status === "Upcoming" ||
+      (a.status as string) === "CONFIRMED" ||
+      (a.status as string) === "SCHEDULED"
+  );
   const completedAppointments = appointments.filter((a) => a.status === "Completed");
 
   return (
@@ -202,10 +246,13 @@ export default function DashboardPage() {
                 </div>
                 <nav className="space-y-2">
                   {[
-                    { id: "overview", label: "Dashboard" },
-                    { id: "appointments", label: "Appointments" },
-                    { id: "doctors", label: "Find Doctors" },
-                    { id: "records", label: "Medical Records" },
+                    { id: "overview", label: t("dashboard") },
+                    { id: "appointments", label: t("appointments") },
+                    { id: "consultations", label: t("consultations") },
+                    { id: "records", label: t("medical_records") },
+                    { id: "doctors", label: t("find_doctors") },
+                    { id: "notifications", label: t("notifications") },
+                    { id: "settings", label: t("settings") },
                   ].map((tab) => (
                     <button
                       key={tab.id}
@@ -229,7 +276,7 @@ export default function DashboardPage() {
                   href="/"
                   className="text-xs text-blue-200 hover:text-white block mb-2"
                 >
-                  ← Back to Home
+                  ← {t("back_to_home")}
                 </Link>
               </div>
             </div>
@@ -249,6 +296,9 @@ export default function DashboardPage() {
             userName={userName}
             userImage={userImage}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
+            onOpenNotifications={() => setActiveTab("notifications")}
+            onOpenMessages={() => setActiveTab("consultations")}
+            onOpenSettings={() => setActiveTab("settings")}
           />
 
           {/* Tab Content with Smooth AnimatePresence Switching */}
@@ -270,14 +320,26 @@ export default function DashboardPage() {
                     upcomingCount={upcomingAppointments.length}
                   />
 
-                  {/* 2. 3 Metrics Cards Row */}
+                  {/* 2. Live Hospital OPD Queue Tracker */}
+                  <LiveOPDQueueTracker
+                    upcomingAppointment={upcomingAppointments[0]}
+                    onOpenPass={(app) => setSelectedPassAppointment(app)}
+                  />
+
+                  {/* 3. 3 Metrics Cards Row */}
                   <StatCards
                     completedVisits={completedAppointments.length || 4}
                     upcomingConsultations={upcomingAppointments.length || 9}
                     labAnalyses={19}
                   />
 
-                  {/* 3. Plans Done */}
+                  {/* 4. Clinical Health Vitals (Blood Pressure, Heart Rate, Glucose, SpO2, BMI) */}
+                  <PatientVitalsCard />
+
+                  {/* 5. Daily Medication & Hydration Adherence */}
+                  <DailyMedicationTracker />
+
+                  {/* 6. Plans Done */}
                   <PlansCard
                     onAddPlan={() => {
                       setBookingInitialDate(undefined);
@@ -285,7 +347,7 @@ export default function DashboardPage() {
                     }}
                   />
 
-                  {/* 4. Active Appointments Management Table/Cards */}
+                  {/* 5. Active Appointments Management Table/Cards */}
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
                     whileInView={{ opacity: 1, y: 0 }}
@@ -296,10 +358,10 @@ export default function DashboardPage() {
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                       <div>
                         <h2 className="text-lg font-bold text-slate-900 dark:text-white">
-                          My Consultations & Visits
+                          {t("my_consultations_title")}
                         </h2>
                         <p className="text-xs text-slate-500 dark:text-slate-400">
-                          Manage your verified medical bookings with specialists
+                          {t("my_consultations_subtitle")}
                         </p>
                       </div>
 
@@ -310,7 +372,7 @@ export default function DashboardPage() {
                           onClick={() => setActiveTab("doctors")}
                           className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold hover:bg-blue-100 transition-colors cursor-pointer"
                         >
-                          + Book Specialist
+                          {t("book_specialist")}
                         </motion.button>
                       </div>
                     </div>
@@ -320,13 +382,13 @@ export default function DashboardPage() {
                       <div className="py-12 text-center">
                         <CalendarCheck className="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
                         <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                          No appointments match your search.
+                          {t("no_appointments_match")}
                         </p>
                         <button
                           onClick={() => setSearchQuery("")}
-                          className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-2 hover:underline"
+                          className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-2 hover:underline cursor-pointer"
                         >
-                          Clear search filters
+                          {t("clear_search_filters")}
                         </button>
                       </div>
                     ) : (
@@ -334,12 +396,13 @@ export default function DashboardPage() {
                         {filteredAppointments.map((app, idx) => (
                           <motion.div
                             key={app.id}
+                            data-testid={`appointment-card-${app.id}`}
                             initial={{ opacity: 0, y: 15 }}
                             whileInView={{ opacity: 1, y: 0 }}
                             viewport={{ once: false, amount: 0.15 }}
                             transition={{ duration: 0.35, delay: idx * 0.05 }}
                             whileHover={{ y: -3, transition: { duration: 0.2 } }}
-                            className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-700/30 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700/60 transition-all hover:shadow-md"
+                            className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-4 sm:p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-700/30 border border-slate-200/60 dark:border-slate-700/60 hover:bg-white dark:hover:bg-slate-700/60 transition-all hover:shadow-md"
                           >
                             <div className="flex items-start gap-3.5">
                               <div className="size-11 rounded-xl bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300 flex items-center justify-center shrink-0 font-bold text-sm">
@@ -359,13 +422,21 @@ export default function DashboardPage() {
                                         : "bg-rose-100 text-rose-700 dark:bg-rose-900/50 dark:text-rose-300"
                                     }`}
                                   >
-                                    {app.status}
+                                    {app.status === "Upcoming" || (app.status as string) === "CONFIRMED" || (app.status as string) === "SCHEDULED"
+                                      ? t("status_upcoming")
+                                      : app.status === "Completed"
+                                      ? t("status_completed")
+                                      : t("status_cancelled")}
                                   </span>
                                 </div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                                  {app.specialty}
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 flex items-center gap-1.5">
+                                  <span>{app.specialty}</span>
+                                  <span>•</span>
+                                  <span className="text-slate-700 dark:text-slate-300 font-medium">
+                                    {app.hospitalName || "Apollo Specialty Hospital, Mumbai"}
+                                  </span>
                                 </p>
-                                <div className="flex items-center gap-3 mt-2 text-xs text-slate-600 dark:text-slate-400 font-medium">
+                                <div className="flex items-center gap-2 mt-2 text-xs text-slate-600 dark:text-slate-400 font-medium flex-wrap">
                                   <span className="flex items-center gap-1">
                                     <Calendar className="size-3.5 text-slate-400" />
                                     {app.date}
@@ -374,6 +445,15 @@ export default function DashboardPage() {
                                     <Clock className="size-3.5 text-slate-400" />
                                     {app.time}
                                   </span>
+                                  <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md font-semibold text-[11px]">
+                                    <Building2 className="size-3" />
+                                    {app.roomNumber || "OPD Chamber 304"}
+                                  </span>
+                                  {app.tokenNumber && (
+                                    <span className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md font-bold text-[11px]">
+                                      {app.tokenNumber}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                             </div>
@@ -381,7 +461,7 @@ export default function DashboardPage() {
                             <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-slate-200/60 dark:border-slate-700">
                               <div className="text-right">
                                 <span className="text-xs text-slate-400 block font-medium">
-                                  Consultation Fee
+                                  {t("consultation_fee")}
                                 </span>
                                 <span className="font-extrabold text-sm text-slate-900 dark:text-white">
                                   {app.fee || "₹1,500"}
@@ -389,26 +469,55 @@ export default function DashboardPage() {
                               </div>
 
                               {app.status === "Upcoming" && (
-                                <motion.button
-                                  whileHover={{ scale: 1.05 }}
-                                  whileTap={{ scale: 0.95 }}
-                                  onClick={() => handleCancel(app.id)}
-                                  className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                                >
-                                  <XCircle className="size-3.5" />
-                                  <span>Cancel & Refund</span>
-                                </motion.button>
+                                <div className="flex items-center gap-2">
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setSelectedPassAppointment(app)}
+                                    className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <QrCode className="size-3.5" />
+                                    <span>{t("digital_opd_pass")}</span>
+                                  </motion.button>
+                                  <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => handleCancel(app.id)}
+                                    className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                                  >
+                                    <XCircle className="size-3.5" />
+                                    <span>{t("cancel_and_refund")}</span>
+                                  </motion.button>
+                                </div>
                               )}
 
                               {app.status === "Completed" && (
-                                <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-                                  <Link
-                                    href="/doctors"
-                                    className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors text-xs font-bold flex items-center gap-1"
-                                  >
-                                    Write Review
-                                  </Link>
-                                </motion.div>
+                                <div className="flex items-center gap-2">
+                                  {reviewedAppointmentIds.includes(app.id) || (app.doctorId && reviewedAppointmentIds.includes(app.doctorId)) ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1 border border-emerald-200 dark:border-emerald-800">
+                                        <CheckCircle2 className="size-3.5 text-emerald-600" />
+                                        <span>{t("reviewed")} (5★)</span>
+                                      </span>
+                                      <Link
+                                        href={`/doctors/${app.doctorId}`}
+                                        className="px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 text-xs font-semibold flex items-center gap-1 transition-colors"
+                                      >
+                                        {t("view_on_doctor_page")}
+                                      </Link>
+                                    </div>
+                                  ) : (
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => setReviewingAppointment(app)}
+                                      className="px-3.5 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 dark:bg-amber-950/40 dark:hover:bg-amber-900/50 text-amber-800 dark:text-amber-200 border border-amber-200 dark:border-amber-800 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer shadow-sm"
+                                    >
+                                      <Star className="size-3.5 fill-amber-400 text-amber-500" />
+                                      <span>{t("write_review")}</span>
+                                    </motion.button>
+                                  )}
+                                </div>
                               )}
                             </div>
                           </motion.div>
@@ -429,6 +538,8 @@ export default function DashboardPage() {
                     setBookingInitialDate(dateIso);
                     setSelectedDoctor(MOCK_DOCTORS[0]);
                   }}
+                  onOpenPass={(app) => setSelectedPassAppointment(app)}
+                  onOpenSettings={() => setActiveTab("settings")}
                 />
               </motion.div>
             )}
@@ -474,19 +585,23 @@ export default function DashboardPage() {
                         className="p-5 rounded-2xl bg-slate-50/70 dark:bg-slate-700/30 border border-slate-200/70 dark:border-slate-700/70 flex flex-col justify-between hover:shadow-lg transition-all group"
                       >
                         <div className="flex gap-3.5 items-start">
-                          <img
-                            src={doc.user.image}
-                            alt={doc.user.name}
-                            className="size-16 rounded-2xl object-cover ring-2 ring-blue-100 dark:ring-blue-900/40 group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div>
+                          <Link href={`/doctors/${doc.id}`} className="shrink-0 group/img">
+                            <img
+                              src={doc.user.image}
+                              alt={doc.user.name}
+                              className="size-16 rounded-2xl object-cover ring-2 ring-blue-100 dark:ring-blue-900/40 group-hover/img:scale-105 transition-transform duration-300"
+                            />
+                          </Link>
+                          <div className="min-w-0">
                             <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
                               {doc.specialization}
                             </span>
-                            <h3 className="font-extrabold text-sm text-slate-900 dark:text-white mt-1">
-                              {doc.user.name}
-                            </h3>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">
+                            <Link href={`/doctors/${doc.id}`} className="hover:text-blue-600 dark:hover:text-blue-400 transition-colors block">
+                              <h3 className="font-extrabold text-sm text-slate-900 dark:text-white mt-1 truncate">
+                                {doc.user.name}
+                              </h3>
+                            </Link>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
                               {doc.hospitalName}
                             </p>
                             <div className="flex items-center gap-2 mt-2 text-xs font-semibold text-slate-700 dark:text-slate-300">
@@ -499,18 +614,26 @@ export default function DashboardPage() {
                           </div>
                         </div>
 
-                        <div className="pt-4 mt-4 border-t border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between">
+                        <div className="pt-4 mt-4 border-t border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
                           <span className="font-extrabold text-sm text-slate-900 dark:text-white">
                             ₹{doc.fee?.toLocaleString() || "1,500"}
                           </span>
-                          <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setSelectedDoctor(doc)}
-                            className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
-                          >
-                            Book Visit
-                          </motion.button>
+                          <div className="flex items-center gap-2">
+                            <Link
+                              href={`/doctors/${doc.id}`}
+                              className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 font-bold text-xs transition-colors"
+                            >
+                              About Doctor
+                            </Link>
+                            <motion.button
+                              whileHover={{ scale: 1.05 }}
+                              whileTap={{ scale: 0.95 }}
+                              onClick={() => setSelectedDoctor(doc)}
+                              className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
+                            >
+                              Book Visit
+                            </motion.button>
+                          </div>
                         </div>
                       </motion.div>
                     ))}
@@ -576,12 +699,22 @@ export default function DashboardPage() {
                           <h4 className="font-bold text-base text-slate-900 dark:text-white">
                             {app.doctorName}
                           </h4>
-                          <p className="text-xs text-slate-500 dark:text-slate-400">
-                            {app.specialty}
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                            {app.specialty} • <span className="font-semibold text-slate-700 dark:text-slate-300">{app.hospitalName || "Apollo Specialty Hospital"}</span>
                           </p>
-                          <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 font-medium">
-                            {app.date} at {app.time}
-                          </p>
+                          <div className="flex items-center gap-2 mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium flex-wrap">
+                            <span className="flex items-center gap-1">
+                              <Calendar className="size-3.5 text-slate-400" /> {app.date} at {app.time}
+                            </span>
+                            <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md font-semibold text-[11px]">
+                              <Building2 className="size-3" /> {app.roomNumber || "OPD Chamber 304"}
+                            </span>
+                            {app.tokenNumber && (
+                              <span className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md font-bold text-[11px]">
+                                {app.tokenNumber}
+                              </span>
+                            )}
+                          </div>
                         </div>
 
                         <div className="flex items-center gap-3">
@@ -589,14 +722,25 @@ export default function DashboardPage() {
                             {app.fee || "₹1,500"}
                           </span>
                           {app.status === "Upcoming" && (
-                            <motion.button
-                              whileHover={{ scale: 1.05 }}
-                              whileTap={{ scale: 0.95 }}
-                              onClick={() => handleCancel(app.id)}
-                              className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer"
-                            >
-                              Cancel & Refund
-                            </motion.button>
+                            <div className="flex items-center gap-2">
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => setSelectedPassAppointment(app)}
+                                className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                              >
+                                <QrCode className="size-3.5" />
+                                <span>OPD Pass</span>
+                              </motion.button>
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleCancel(app.id)}
+                                className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer"
+                              >
+                                Cancel & Refund
+                              </motion.button>
+                            </div>
                           )}
                         </div>
                       </motion.div>
@@ -606,39 +750,39 @@ export default function DashboardPage() {
               </motion.div>
             )}
 
-            {/* Medical Records / Consultations Placeholders */}
-            {(activeTab === "records" || activeTab === "consultations") && (
-              <motion.div
-                key={activeTab}
-                initial={{ opacity: 0, scale: 0.96 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.96 }}
-                transition={{ duration: 0.25 }}
-                className="bg-white dark:bg-slate-800/90 rounded-[28px] p-10 border border-slate-200/80 dark:border-slate-700/80 shadow-sm text-center mt-4"
-              >
-                <motion.div
-                  animate={{ scale: [1, 1.08, 1] }}
-                  transition={{ repeat: Infinity, duration: 3.5, ease: "easeInOut" }}
-                >
-                  <ShieldCheck className="size-14 text-blue-500 mx-auto mb-4" />
-                </motion.div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  {activeTab === "records"
-                    ? "Medical Health Records"
-                    : "Direct Consultations & Telehealth"}
-                </h3>
-                <p className="text-xs text-slate-500 max-w-md mx-auto mt-2 mb-6">
-                  All patient records, laboratory test reports, and telehealth summaries are securely encrypted and linked to your MediBook account.
-                </p>
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => setActiveTab("overview")}
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 text-white text-xs font-bold hover:bg-blue-700 transition-all shadow-sm cursor-pointer"
-                >
-                  Return to Dashboard
-                </motion.button>
-              </motion.div>
+            {/* Medical Records Tab */}
+            {activeTab === "records" && (
+              <MedicalRecordsView
+                userName={userName}
+                onReturnToOverview={() => setActiveTab("overview")}
+              />
+            )}
+
+            {/* Direct Consultations Tab */}
+            {activeTab === "consultations" && (
+              <ConsultationsView
+                appointments={appointments}
+                userName={userName}
+                onReturnToOverview={() => setActiveTab("overview")}
+                onOpenBooking={() => setSelectedDoctor(MOCK_DOCTORS[0])}
+              />
+            )}
+
+            {/* Notifications Center Tab */}
+            {activeTab === "notifications" && (
+              <NotificationsView
+                onReturnToOverview={() => setActiveTab("overview")}
+                onNavigateToTab={(tab) => setActiveTab(tab)}
+              />
+            )}
+
+            {/* Account & Patient Settings Tab */}
+            {activeTab === "settings" && (
+              <SettingsView
+                userName={userName}
+                userEmail={userEmail}
+                onReturnToOverview={() => setActiveTab("overview")}
+              />
             )}
           </AnimatePresence>
         </div>
@@ -652,6 +796,25 @@ export default function DashboardPage() {
           onClose={() => {
             setSelectedDoctor(null);
             setBookingInitialDate(undefined);
+          }}
+        />
+      )}
+
+      {/* Digital Hospital OPD Pass Modal */}
+      {selectedPassAppointment && (
+        <DigitalOPDPassModal
+          appointment={selectedPassAppointment}
+          onClose={() => setSelectedPassAppointment(null)}
+        />
+      )}
+
+      {/* Write Doctor Review Modal */}
+      {reviewingAppointment && (
+        <WriteReviewModal
+          appointment={reviewingAppointment}
+          onClose={() => setReviewingAppointment(null)}
+          onReviewSubmitted={(appId) => {
+            setReviewedAppointmentIds((prev) => [...prev, appId, reviewingAppointment.doctorId]);
           }}
         />
       )}

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/components/LanguageContext";
 
 interface DashboardSidebarProps {
   activeTab: string;
@@ -28,12 +29,14 @@ export function DashboardSidebar({
   setActiveTab,
   onOpenBooking,
 }: DashboardSidebarProps) {
+  const { t } = useLanguage();
+
   const navItems = [
-    { id: "overview", label: "Dashboard", icon: LayoutDashboard },
-    { id: "appointments", label: "Appointments", icon: CalendarCheck },
-    { id: "consultations", label: "Consultations", icon: MessageSquare },
-    { id: "records", label: "Medical Records", icon: Activity },
-    { id: "doctors", label: "Find Doctors", icon: Stethoscope },
+    { id: "overview", label: t("dashboard"), icon: LayoutDashboard },
+    { id: "appointments", label: t("appointments"), icon: CalendarCheck },
+    { id: "consultations", label: t("consultations"), icon: MessageSquare },
+    { id: "records", label: t("medical_records"), icon: Activity },
+    { id: "doctors", label: t("find_doctors"), icon: Stethoscope },
   ];
 
   return (
@@ -95,7 +98,7 @@ export function DashboardSidebar({
             if (onOpenBooking) onOpenBooking();
             else setActiveTab("doctors");
           }}
-          title="Book Appointment"
+          title={t("book_appointment")}
           className="size-12 rounded-2xl bg-white/20 hover:bg-white text-white hover:text-blue-600 flex items-center justify-center transition-colors cursor-pointer mt-2 group border border-white/20"
         >
           <PlusCircle className="size-5" />
@@ -108,7 +111,7 @@ export function DashboardSidebar({
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
           onClick={() => setActiveTab("notifications")}
-          title="Notifications"
+          title={t("notifications")}
           className={`size-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer relative ${
             activeTab === "notifications"
               ? "bg-white text-blue-600"
@@ -123,7 +126,7 @@ export function DashboardSidebar({
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
           onClick={() => setActiveTab("settings")}
-          title="Settings"
+          title={t("settings")}
           className={`size-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
             activeTab === "settings"
               ? "bg-white text-blue-600"
@@ -137,7 +140,7 @@ export function DashboardSidebar({
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
           onClick={() => signOut({ callbackUrl: "/" })}
-          title="Log Out"
+          title={t("logout")}
           className="size-11 rounded-xl flex items-center justify-center text-blue-200 hover:text-red-200 hover:bg-red-500/20 transition-all cursor-pointer mt-1"
         >
           <LogOut className="size-5" />

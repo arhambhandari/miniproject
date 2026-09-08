@@ -3,10 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
+  provider = "postgresql"
 }
-
-// Enums removed for SQLite compatibility. Use String instead.
 
 model User {
   id            String    @id @default(cuid())
@@ -39,11 +37,18 @@ model DoctorProfile {
   
   hospitalName  String
   contactNumber String
+  fee           Float     @default(1500)
+  satisfaction  Int       @default(98)
+  nextAvailable String    @default("OCT 12")
   
-  stripeAccountId String? // For receiving payments
+  stripeAccountId String? // Optional legacy field
   
   appointments  Appointment[]
   reviews       Review[]
+  medications   Medication[]
+  clinicalRecords ClinicalRecord[]
+
+  @@index([specialization])
 }
 
 model PatientProfile {
@@ -56,6 +61,8 @@ model PatientProfile {
   
   appointments  Appointment[]
   reviews       Review[]
+  medications   Medication[]
+  clinicalRecords ClinicalRecord[]
 }
 
 model Appointment {
@@ -67,18 +74,25 @@ model Appointment {
   doctorId        String
   doctor          DoctorProfile  @relation(fields: [doctorId], references: [id])
   
-  date            DateTime
+  date            String    // e.g. "2026-10-12" or "Oct 12, 2026"
   startTime       String    // e.g., "10:00 AM"
-  endTime         String    // e.g., "10:30 AM"
+  endTime         String?   // e.g., "10:30 AM"
   
-  status          String    @default("SCHEDULED")
+  status          String    @default("SCHEDULED") // SCHEDULED, CONFIRMED, COMPLETED, CANCELLED
   meetingNotes    String?   
-  disease         String?   // User mentioned searching by disease
+  disease         String?   
   
   payment         Payment?
+  medications     Medication[]
+  clinicalRecords ClinicalRecord[]
+  messages        Message[]
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+
+  @@index([doctorId, date, startTime])
+  @@index([patientId])
+  @@index([doctorId])
 }
 
 model Payment {
@@ -87,11 +101,14 @@ model Payment {
   appointment     Appointment @relation(fields: [appointmentId], references: [id])
   
   amount          Float
-  currency        String    @default("usd")
+  currency        String    @default("INR")
   
+  razorpayOrderId   String?   @unique
+  razorpayPaymentId String?   @unique
+  razorpaySignature String?
   stripePaymentIntentId String? @unique
   
-  status          String    @default("PENDING")
+  status          String    @default("PENDING") // PENDING, SUCCESS, FAILED
   
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
@@ -110,6 +127,76 @@ model Review {
   comment         String?   
   
   createdAt       DateTime  @default(now())
+
+  @@index([doctorId])
+}
+
+model Medication {
+  id            String          @id @default(cuid())
+  patientId     String
+  patient       PatientProfile  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String?
+  doctor        DoctorProfile?  @relation(fields: [doctorId], references: [id], onDelete: SetNull)
+  appointmentId String?
+  appointment   Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  
+  name          String          // e.g. "Atorvastatin"
+  dosage        String          // e.g. "20 mg"
+  instruction   String          // e.g. "1 tablet after breakfast"
+  timeSlot      String          // "Morning" | "Afternoon" | "Night"
+  scheduledTime String          // e.g. "08:00 AM"
+  daysRemaining Int             @default(14)
+  taken         Boolean         @default(false)
+  takenAt       String?
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model ClinicalRecord {
+  id            String          @id @default(cuid())
+  patientId     String
+  patient       PatientProfile  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctorId      String
+  doctor        DoctorProfile   @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  appointmentId String?
+  appointment   Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  
+  diagnosis     String?
+  treatmentPlan String?
+  notes         String?
+  
+  // Clinical Vitals
+  bloodPressure String?         // e.g. "120/80"
+  heartRate     String?         // e.g. "72"
+  bloodSugar    String?         // e.g. "94"
+  spo2          String?         // e.g. "99"
+  weight        String?         // e.g. "68 kg"
+  temperature   String?         // e.g. "98.4"
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model Message {
+  id            String          @id @default(cuid())
+  senderId      String          // User id of sender
+  receiverId    String          // User id of receiver
+  senderRole    String          // "DOCTOR" | "PATIENT"
+  content       String
+  appointmentId String?
+  appointment   Appointment?    @relation(fields: [appointmentId], references: [id], onDelete: SetNull)
+  read          Boolean         @default(false)
+  createdAt     DateTime        @default(now())
+
+  @@index([senderId, receiverId])
+  @@index([receiverId])
 }
 
 // NextAuth Required Models

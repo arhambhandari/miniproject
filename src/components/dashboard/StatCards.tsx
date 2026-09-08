@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { MoreHorizontal, TrendingUp, TrendingDown, Building2, Video, FlaskConical } from "lucide-react";
+import { MoreHorizontal, TrendingUp, TrendingDown, Building2, Pill, FlaskConical } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/components/LanguageContext";
 
 interface StatCardsProps {
   completedVisits?: number;
@@ -15,9 +16,11 @@ export function StatCards({
   upcomingConsultations = 9,
   labAnalyses = 19,
 }: StatCardsProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 lg:gap-5">
-      {/* Card 1: In-Clinic / Offline Work */}
+      {/* Card 1: In-Clinic / Hospital OPD */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -35,7 +38,7 @@ export function StatCards({
               <Building2 className="size-4" />
             </motion.span>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-              Offline Work
+              {t("in_clinic_opd")}
             </span>
           </div>
           <button className="text-slate-300 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300 transition-colors">
@@ -55,7 +58,7 @@ export function StatCards({
               {completedVisits}
             </motion.div>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-              hospital patients
+              {t("completed_hospital_visits")}
             </p>
           </div>
 
@@ -90,7 +93,7 @@ export function StatCards({
         </div>
       </motion.div>
 
-      {/* Card 2: Online Consultations */}
+      {/* Card 2: Active Prescriptions & Medications */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         whileInView={{ opacity: 1, y: 0 }}
@@ -105,10 +108,10 @@ export function StatCards({
               whileHover={{ rotate: 10, scale: 1.15 }}
               className="size-8 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 flex items-center justify-center transition-transform"
             >
-              <Video className="size-4" />
+              <Pill className="size-4" />
             </motion.span>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-              Online Work
+              {t("prescriptions_and_meds")}
             </span>
           </div>
           <button className="text-slate-300 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300 transition-colors">
@@ -128,7 +131,7 @@ export function StatCards({
               {upcomingConsultations}
             </motion.div>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-              online consultations
+              {t("active_daily_doses")}
             </p>
           </div>
 
@@ -181,7 +184,7 @@ export function StatCards({
               <FlaskConical className="size-4" />
             </motion.span>
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
-              Laboratory Work
+              {t("diagnostics_and_labs")}
             </span>
           </div>
           <button className="text-slate-300 hover:text-slate-600 dark:text-slate-600 dark:hover:text-slate-300 transition-colors">
@@ -201,7 +204,7 @@ export function StatCards({
               {labAnalyses}
             </motion.div>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
-              laboratory analysis
+              {t("reports_verified_and_synced")}
             </p>
           </div>
 

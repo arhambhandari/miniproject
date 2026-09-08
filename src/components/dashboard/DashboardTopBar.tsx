@@ -3,6 +3,8 @@
 import React from "react";
 import { Search, Bell, MessageSquare, Menu } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
+import { useLanguage } from "@/components/LanguageContext";
 import { motion } from "framer-motion";
 
 interface DashboardTopBarProps {
@@ -11,6 +13,9 @@ interface DashboardTopBarProps {
   userName?: string;
   userImage?: string;
   onOpenMobileMenu?: () => void;
+  onOpenNotifications?: () => void;
+  onOpenMessages?: () => void;
+  onOpenSettings?: () => void;
 }
 
 export function DashboardTopBar({
@@ -19,7 +24,12 @@ export function DashboardTopBar({
   userName = "Patient",
   userImage,
   onOpenMobileMenu,
+  onOpenNotifications,
+  onOpenMessages,
+  onOpenSettings,
 }: DashboardTopBarProps) {
+  const { t } = useLanguage();
+
   return (
     <div className="flex items-center justify-between gap-4 pb-4">
       {/* Mobile Menu Button & Title */}
@@ -40,35 +50,42 @@ export function DashboardTopBar({
       </div>
 
       {/* Search Input matching reference image */}
-      <div className="relative flex-1 max-w-xl transition-transform duration-200 focus-within:scale-[1.01]">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          placeholder="Search for events, doctors, appointments..."
-          className="w-full h-11 pl-11 pr-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
-        />
-        {searchQuery && (
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setSearchQuery("")}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
-          >
-            Clear
-          </motion.button>
-        )}
+      <div className="flex items-center gap-3 flex-1 max-w-2xl">
+        <div className="relative flex-1 transition-transform duration-200 focus-within:scale-[1.01]">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={t("search_dash_placeholder")}
+            className="w-full h-11 pl-11 pr-4 rounded-2xl bg-white dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-sm"
+          />
+          {searchQuery && (
+            <motion.button
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              {t("clear")}
+            </motion.button>
+          )}
+        </div>
+        <span className="hidden sm:inline-block text-xs font-normal text-slate-400 dark:text-slate-500 shrink-0">
+          {t("example_dashboard_note")}
+        </span>
       </div>
 
       {/* Right Side Actions */}
-      <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+      <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        <LanguageSwitcher />
         <ThemeToggle />
 
         {/* Message Bubble Icon */}
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
+          onClick={onOpenMessages}
           className="size-11 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:border-blue-200 transition-colors shadow-sm cursor-pointer"
           title="Direct Consultations"
         >
@@ -79,6 +96,7 @@ export function DashboardTopBar({
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
+          onClick={onOpenNotifications}
           className="size-11 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:text-blue-600 hover:border-blue-200 transition-colors shadow-sm relative cursor-pointer"
           title="Notifications"
         >
@@ -89,7 +107,11 @@ export function DashboardTopBar({
         {/* Profile Pill / Avatar */}
         <motion.div
           whileHover={{ scale: 1.04 }}
-          className="hidden sm:flex items-center gap-2.5 pl-2 cursor-default"
+          onClick={onOpenSettings}
+          className={`hidden sm:flex items-center gap-2.5 pl-2 ${
+            onOpenSettings ? "cursor-pointer hover:opacity-90" : "cursor-default"
+          }`}
+          title={onOpenSettings ? "Patient Profile & Settings" : undefined}
         >
           <div className="relative size-10 rounded-xl overflow-hidden bg-blue-100 dark:bg-blue-900/40 border border-slate-200/80 dark:border-slate-700 flex items-center justify-center font-bold text-blue-700 dark:text-blue-300 text-sm">
             {userImage ? (
@@ -108,7 +130,7 @@ export function DashboardTopBar({
               {userName}
             </p>
             <p className="text-[11px] text-slate-400 dark:text-slate-500">
-              Verified Patient
+              {t("verified_patient")}
             </p>
           </div>
         </motion.div>

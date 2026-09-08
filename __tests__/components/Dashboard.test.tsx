@@ -13,10 +13,10 @@ describe("Dashboard Components", () => {
     expect(screen.getByText(/3 upcoming consultations/i)).toBeInTheDocument();
   });
 
-  it("renders StatCards with Offline, Online, and Laboratory work metrics", () => {
+  it("renders StatCards with In-Clinic OPD, Prescriptions, and Laboratory work metrics", () => {
     render(<StatCards completedVisits={4} upcomingConsultations={9} labAnalyses={19} />);
-    expect(screen.getByText("Offline Work")).toBeInTheDocument();
-    expect(screen.getByText("Online Work")).toBeInTheDocument();
+    expect(screen.getByText("In-Clinic OPD")).toBeInTheDocument();
+    expect(screen.getByText("Active Prescriptions")).toBeInTheDocument();
     expect(screen.getByText("Laboratory Work")).toBeInTheDocument();
     expect(screen.getByText("4")).toBeInTheDocument();
     expect(screen.getByText("9")).toBeInTheDocument();
@@ -82,12 +82,12 @@ describe("Dashboard Components", () => {
         id: "app_test_1",
         patientName: "Rahul Sharma",
         doctorId: "doc_1",
-        doctorName: "Dr. Elena Rostova",
+        doctorName: "Dr. Aarav Mehta",
         specialty: "Neuro-Oncology",
         date: todayFormatted,
         time: "10:00 AM",
         status: "Upcoming" as const,
-        fee: "₹1,500",
+        fee: "₹2,000",
       },
     ];
 
@@ -102,8 +102,84 @@ describe("Dashboard Components", () => {
 
     expect(screen.getByText("My Profile")).toBeInTheDocument();
     expect(screen.getByText("My Calendar")).toBeInTheDocument();
-    expect(screen.getByText("Consultation with Dr. Elena Rostova")).toBeInTheDocument();
+    expect(screen.getByText("Consultation with Dr. Aarav Mehta")).toBeInTheDocument();
     expect(screen.getByText("Neuro-Oncology")).toBeInTheDocument();
     expect(screen.getByText("10:00 AM")).toBeInTheDocument();
   });
+
+  it("renders SettingsView with all detailed sections (profile, notifications, security, billing)", () => {
+    const { fireEvent } = require("@testing-library/react");
+    const { SettingsView } = require("@/components/dashboard/SettingsView");
+    const onReturn = jest.fn();
+
+    render(
+      <SettingsView
+        userName="Rahul Sharma"
+        userEmail="rahul.sharma@example.com"
+        onReturnToOverview={onReturn}
+      />
+    );
+
+    // Header & profile inputs
+    expect(screen.getByText("Account Settings")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Rahul Sharma")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("rahul.sharma@example.com")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("+91 98765 43210")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("A(II) Rh+")).toBeInTheDocument();
+
+    // Switch to Notifications tab
+    fireEvent.click(screen.getByRole("button", { name: /Notifications/i }));
+    expect(screen.getByText("Appointment Email Confirmations")).toBeInTheDocument();
+    expect(screen.getByText("SMS / WhatsApp Reminders")).toBeInTheDocument();
+
+    // Switch to Security tab
+    fireEvent.click(screen.getByRole("button", { name: /Security & Login/i }));
+    expect(screen.getByText("Two-Factor Authentication (2FA)")).toBeInTheDocument();
+    expect(screen.getByText("Change Password")).toBeInTheDocument();
+
+    // Switch to Billing tab
+    fireEvent.click(screen.getByRole("button", { name: /Payments & Billing/i }));
+    expect(screen.getByText("Payment Methods & Invoices")).toBeInTheDocument();
+    expect(screen.getByText("Razorpay Instant UPI & Cards")).toBeInTheDocument();
+  });
+
+  it("renders NotificationsView with filter pills and notification items", () => {
+    const { fireEvent } = require("@testing-library/react");
+    const { NotificationsView } = require("@/components/dashboard/NotificationsView");
+    const onReturn = jest.fn();
+    const onNav = jest.fn();
+
+    render(
+      <NotificationsView
+        onReturnToOverview={onReturn}
+        onNavigateToTab={onNav}
+      />
+    );
+
+    expect(screen.getByText("Notifications & Activity Center")).toBeInTheDocument();
+    expect(screen.getByText(/Upcoming In-Clinic Consultation in 2 Hours/i)).toBeInTheDocument();
+    expect(screen.getByText(/Complete Blood Count \(CBC\) Report Ready/i)).toBeInTheDocument();
+
+    // Filter by Unread
+    fireEvent.click(screen.getByText(/Unread/i));
+    expect(screen.getByText(/Upcoming In-Clinic Consultation in 2 Hours/i)).toBeInTheDocument();
+
+    // Test Back button
+    fireEvent.click(screen.getByText("← Back to Dashboard"));
+    expect(onReturn).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders PatientVitalsCard with clinical health biometrics", () => {
+    const { PatientVitalsCard } = require("@/components/dashboard/PatientVitalsCard");
+    render(<PatientVitalsCard />);
+
+    expect(screen.getByText("Clinical Health Vitals")).toBeInTheDocument();
+    expect(screen.getByText("Blood Pressure")).toBeInTheDocument();
+    expect(screen.getByText("120/80")).toBeInTheDocument();
+    expect(screen.getByText("Heart Rate")).toBeInTheDocument();
+    expect(screen.getByText("72")).toBeInTheDocument();
+    expect(screen.getByText("Oxygen (SpO2)")).toBeInTheDocument();
+    expect(screen.getByText("99")).toBeInTheDocument();
+  });
 });
+

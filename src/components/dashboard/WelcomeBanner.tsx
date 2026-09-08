@@ -3,22 +3,35 @@
 import React, { useState, useEffect } from "react";
 import { Sparkles, Calendar } from "lucide-react";
 import { motion } from "framer-motion";
+import { useLanguage } from "@/components/LanguageContext";
 
 interface WelcomeBannerProps {
   userName?: string;
   upcomingCount?: number;
 }
 
+const dayNamesHi: Record<string, string> = {
+  Monday: "सोमवार",
+  Tuesday: "मंगलवार",
+  Wednesday: "बुधवार",
+  Thursday: "गुरुवार",
+  Friday: "शुक्रवार",
+  Saturday: "शनिवार",
+  Sunday: "रविवार",
+};
+
 export function WelcomeBanner({
   userName = "Patient",
   upcomingCount = 2,
 }: WelcomeBannerProps) {
+  const { language, t } = useLanguage();
   const [currentDateTime, setCurrentDateTime] = useState("");
   const [dayName, setDayName] = useState("Monday");
 
   useEffect(() => {
     const updateDateTime = () => {
       const now = new Date();
+      const locale = language === "hi" ? "hi-IN" : "en-US";
       const options: Intl.DateTimeFormatOptions = {
         month: "short",
         day: "numeric",
@@ -27,13 +40,15 @@ export function WelcomeBanner({
         minute: "2-digit",
         hour12: true,
       };
-      setCurrentDateTime(now.toLocaleDateString("en-US", options));
+      setCurrentDateTime(now.toLocaleDateString(locale, options));
       setDayName(now.toLocaleDateString("en-US", { weekday: "long" }));
     };
     updateDateTime();
     const interval = setInterval(updateDateTime, 60000);
     return () => clearInterval(interval);
-  }, []);
+  }, [language]);
+
+  const localizedDay = language === "hi" ? (dayNamesHi[dayName] || dayName) : dayName;
 
   return (
     <motion.div
@@ -71,30 +86,45 @@ export function WelcomeBanner({
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-white/90 border border-white/20 shadow-sm cursor-default"
           >
             <Calendar className="size-3.5 text-blue-200" />
-            <span>{currentDateTime || "Today • Schedule Active"}</span>
+            <span>{currentDateTime || (language === "hi" ? "आज • सक्रिय शेड्यूल" : "Today • Schedule Active")}</span>
           </motion.div>
 
           <div>
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-white leading-tight">
-              Good Day, {userName}!
+              {t("good_day")}, {userName}!
             </h1>
             <p className="mt-1 text-sm sm:text-base text-blue-100/90 font-medium">
-              Have a nice {dayName}! You have{" "}
-              <span className="font-bold underline decoration-blue-300 underline-offset-2">
-                {upcomingCount} upcoming {upcomingCount === 1 ? "consultation" : "consultations"}
-              </span>{" "}
-              today.
+              {language === "hi" ? (
+                <>
+                  आपका <span className="font-bold">{localizedDay}</span> शुभ हो! आपके पास आज{" "}
+                  <span className="font-bold underline decoration-blue-300 underline-offset-2">
+                    {upcomingCount} आगामी परामर्श
+                  </span>{" "}
+                  हैं।
+                </>
+              ) : (
+                <>
+                  Have a nice {dayName}! You have{" "}
+                  <span className="font-bold underline decoration-blue-300 underline-offset-2">
+                    {upcomingCount} upcoming {upcomingCount === 1 ? "consultation" : "consultations"}
+                  </span>{" "}
+                  today.
+                </>
+              )}
             </p>
           </div>
 
-          <div className="flex items-center gap-3 pt-1">
+          <div className="flex items-center gap-2.5 pt-1 flex-wrap">
             <motion.div
               whileHover={{ scale: 1.03 }}
               className="flex items-center gap-1.5 text-xs text-blue-100 bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/10 cursor-default"
             >
               <Sparkles className="size-3.5 text-amber-300 animate-spin" style={{ animationDuration: "8s" }} />
-              <span>All vital health records synced</span>
+              <span>{t("records_synced_badge")}</span>
             </motion.div>
+            <span className="text-[11px] font-semibold bg-emerald-400/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 rounded-xl">
+              {t("opd_queue_active_badge")}
+            </span>
           </div>
         </motion.div>
 

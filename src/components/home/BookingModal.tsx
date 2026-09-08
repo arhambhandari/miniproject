@@ -58,6 +58,7 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmedPaymentId, setConfirmedPaymentId] = useState("");
   const [emailPreview, setEmailPreview] = useState("");
+  const [bookingErrorMessage, setBookingErrorMessage] = useState("");
 
   // Quick date options generator (Today, +1 day, +2 days, etc.)
   const quickDates = React.useMemo(() => {
@@ -248,6 +249,10 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
           setModalStep("success");
           toast.success("Appointment successfully booked!");
         } else {
+          const errData = await res.json().catch(() => ({}));
+          const msg = errData.error || "Failed to book appointment";
+          setBookingErrorMessage(msg);
+          toast.error(msg);
           setModalStep("error");
         }
         setIsProcessing(false);
@@ -317,6 +322,10 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
               setModalStep("success");
               toast.success("Payment verified and appointment confirmed!");
             } else {
+              const errData = await res.json().catch(() => ({}));
+              const msg = errData.error || "Failed to book appointment";
+              setBookingErrorMessage(msg);
+              toast.error(msg);
               setModalStep("error");
             }
           } catch (e) {
@@ -397,11 +406,17 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
               <div className="p-4 rounded-2xl bg-gradient-to-br from-blue-50/70 via-slate-50 to-indigo-50/40 dark:from-slate-800/90 dark:via-slate-800 dark:to-slate-800/60 border border-blue-100/80 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
                   <div className="relative size-16 rounded-2xl overflow-hidden ring-2 ring-white dark:ring-slate-700 shadow-sm shrink-0">
-                    <img
-                      src={doctor.user.image}
-                      alt={doctor.user.name}
-                      className="w-full h-full object-cover"
-                    />
+                    {doctor.user?.image ? (
+                      <img
+                        src={doctor.user.image}
+                        alt={doctor.user.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-extrabold flex items-center justify-center text-xl select-none">
+                        {doctor.user?.name ? doctor.user.name.replace(/^Dr\.\s*/i, "").charAt(0).toUpperCase() : "D"}
+                      </div>
+                    )}
                     <span className="absolute bottom-1 right-1 size-2.5 bg-emerald-500 rounded-full ring-2 ring-white dark:ring-slate-800" />
                   </div>
                   <div>
@@ -418,10 +433,17 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
                       {doctor.specialization}
                     </p>
                     <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-1">
-                      <span className="flex items-center gap-1 font-medium">
-                        <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                        4.9 (140+ reviews)
-                      </span>
+                      {doctor.reviews && doctor.reviews.length > 0 ? (
+                        <span className="flex items-center gap-1 font-medium">
+                          <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                          {(doctor.reviews.reduce((acc: number, r: any) => acc + (r.rating || 5), 0) / doctor.reviews.length).toFixed(1)} ({doctor.reviews.length} reviews)
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1 text-slate-400">
+                          <Star className="size-3.5 text-slate-300" />
+                          New Specialist
+                        </span>
+                      )}
                       <span>•</span>
                       <span className="flex items-center gap-1">
                         <MapPin className="size-3" />
@@ -998,7 +1020,7 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
                 Booking Could Not Be Completed
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1">
-                There was an issue processing your payment or scheduling the visit. No charges were made.
+                {bookingErrorMessage || "There was an issue processing your payment or scheduling the visit. No charges were made."}
               </p>
             </div>
             <div className="flex gap-3 max-w-xs mx-auto pt-2">

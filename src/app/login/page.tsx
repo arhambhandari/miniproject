@@ -37,7 +37,19 @@ export default function LoginPage() {
       if (res?.error) {
         toast.error("Invalid credentials");
       } else {
-        router.push("/dashboard");
+        try {
+          const sessionRes = await fetch("/api/auth/session");
+          const sessionData = await sessionRes.json();
+          if (sessionData?.user?.role === "DOCTOR") {
+            toast.success("Welcome to Doctor Portal!");
+            router.push("/doctor/dashboard");
+          } else {
+            toast.success("Welcome back!");
+            router.push("/dashboard");
+          }
+        } catch {
+          router.push("/dashboard");
+        }
         router.refresh();
       }
     } catch (err) {

@@ -1,9 +1,7 @@
 import { NextResponse } from "next/server";
-import { MOCK_DOCTORS } from "@/lib/data";
+import { prisma } from "@/lib/prisma";
 
-// Mock Data for Prototyping (No Database Required)
-
-// GET: Fetch list of doctors (Mocked)
+// GET: Fetch list of doctors from Database
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
@@ -11,37 +9,73 @@ export async function GET(request: Request) {
     const sort = searchParams.get("sort");
     const q = searchParams.get("q");
 
-    let filteredDoctors = [...MOCK_DOCTORS];
+    const where: any = {};
 
     // Apply Specialty Filter
     if (specialty && specialty !== "ALL SPECIALTIES") {
-      filteredDoctors = filteredDoctors.filter(
-        (doc) => doc.specialization.toLowerCase() === specialty.toLowerCase()
-      );
+      where.specialization = {
+        equals: specialty.toUpperCase(),
+      };
     }
-    
-    // Apply Text Query Filter (Name or Clinic)
+
+    // Apply Search Query Filter
     if (q) {
-      const qLower = q.toLowerCase();
-      filteredDoctors = filteredDoctors.filter(
-        (doc) => doc.user.name.toLowerCase().includes(qLower) || doc.hospitalName.toLowerCase().includes(qLower)
-      );
+      where.OR = [
+        { hospitalName: { contains: q } },
+        { specialization: { contains: q } },
+        { user: { name: { contains: q } } },
+      ];
     }
 
-    // Apply Sorting
+    let orderBy: any = { experience: "desc" };
     if (sort === "HIGHEST RATED") {
-      filteredDoctors.sort((a, b) => b.satisfaction - a.satisfaction);
+      orderBy = { satisfaction: "desc" };
     } else if (sort === "MOST REVIEWED") {
-      // Mock sorting for most reviewed (just experience as a proxy for now)
-      filteredDoctors.sort((a, b) => b.experience - a.experience);
+      orderBy = { reviews: { _count: "desc" } };
     }
 
-    // Add a tiny artificial delay to simulate a real network request
-    await new Promise(resolve => setTimeout(resolve, 300));
+    const doctors = await prisma.doctorProfile.findMany({
+      where,
+      include: {
+        user: {
+          select: {
+            name: true,
+            email: true,
+            image: true,
+          },
+        },
+        reviews: true,
+      },
+      orderBy,
+    });
 
-    return NextResponse.json(filteredDoctors);
+    // Format safe response matching Doctor type
+    const formattedDoctors = doctors.map((doc) => {
+      const realSatisfaction = doc.reviews && doc.reviews.length > 0
+        ? Math.round((doc.reviews.reduce((acc, r) => acc + r.rating, 0) / (doc.reviews.length * 5)) * 100)
+        : (doc.satisfaction && doc.reviews?.length ? doc.satisfaction : 0);
+
+      return {
+        id: doc.id,
+        specialization: doc.specialization,
+        qualifications: doc.qualifications,
+        experience: doc.experience,
+        hospitalName: doc.hospitalName,
+        contactNumber: doc.contactNumber,
+        satisfaction: realSatisfaction,
+        nextAvailable: doc.nextAvailable,
+        fee: doc.fee,
+        reviews: doc.reviews || [],
+        user: {
+          name: doc.user.name || "Doctor",
+          image: doc.user.image || null,
+        },
+      };
+    });
+
+    return NextResponse.json(formattedDoctors);
   } catch (error) {
-    console.error("Error fetching mock doctors:", error);
+    console.error("Error fetching doctors from database:", error);
     return NextResponse.json(
       { error: "Failed to fetch doctors" },
       { status: 500 }
@@ -49,7 +83,34 @@ export async function GET(request: Request) {
   }
 }
 
-// POST: Mock Create Doctor Profile
+// POST: Create Doctor Profile (Admin / Registered Doctor)
 export async function POST(request: Request) {
-  return NextResponse.json({ message: "Mock profile created successfully (DB Disabled)" }, { status: 201 });
+  try {
+    const body = await request.json();
+    const { userId, specialization, qualifications, experience, hospitalName, contactNumber, fee } = body;
+
+    if (!userId || !specialization || !hospitalName) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const doctor = await prisma.doctorProfile.create({
+      data: {
+        userId,
+        specialization: specialization.toUpperCase(),
+        qualifications: qualifications || "MD",
+        experience: experience ? parseInt(experience) : 5,
+        hospitalName,
+        contactNumber: contactNumber || "+91-555-0100",
+        fee: fee ? parseFloat(fee) : 1500,
+      },
+      include: {
+        user: true,
+      },
+    });
+
+    return NextResponse.json({ success: true, doctor }, { status: 201 });
+  } catch (error) {
+    console.error("Error creating doctor:", error);
+    return NextResponse.json({ error: "Failed to create doctor" }, { status: 500 });
+  }
 }

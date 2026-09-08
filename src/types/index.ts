@@ -14,22 +14,34 @@ export type Doctor = {
   fee?: number;
   hospitalName?: string;
   nextAvailable: string;
+  bio?: string;
+  qualifications?: string;
+  reviews?: Review[];
   user: {
     name: string;
-    image: string;
+    image?: string | null;
   };
 };
 
 export type Appointment = {
   id: string;
+  patientId?: string;
+  patientUserId?: string;
   patientName: string;
+  patientEmail?: string;
   doctorId: string;
+  doctorUserId?: string;
   doctorName: string;
   specialty: string;
   date: string;
   time: string;
   status: "Upcoming" | "Completed" | "Cancelled";
   fee: string;
+  hospitalName?: string;
+  roomNumber?: string;
+  tokenNumber?: string;
+  condition?: string;
+  paymentStatus?: string;
 };
 
 export type Review = {
