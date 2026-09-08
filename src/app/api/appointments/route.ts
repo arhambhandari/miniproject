@@ -158,6 +158,17 @@ export async function POST(req: Request) {
     });
 
     if (!patientProfile) {
+      // Verify user exists in database to avoid foreign key violation
+      const userExists = await prisma.user.findUnique({
+        where: { id: session.user.id },
+      });
+      if (!userExists) {
+        return NextResponse.json(
+          { error: "User session expired or not found in database. Please log in again." },
+          { status: 401 }
+        );
+      }
+
       patientProfile = await prisma.patientProfile.create({
         data: {
           userId: session.user.id,

@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- SBI Blue Circle -->
+  <circle cx="50" cy="50" r="46" fill="#0084C9"/>
+  <!-- Keyhole Center Cutout -->
+  <circle cx="50" cy="42" r="15" fill="#FFFFFF"/>
+  <rect x="44" y="42" width="12" height="42" fill="#FFFFFF"/>
+</svg>

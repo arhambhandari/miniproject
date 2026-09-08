@@ -139,10 +139,17 @@ export default function DashboardPage() {
   const [reviewedAppointmentIds, setReviewedAppointmentIds] = useState<string[]>([]);
 
   useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
     // Fetch logged in session if available
-    fetch("/api/auth/session")
-      .then((res) => res.json())
+    fetch("/api/auth/session", { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
       .then((data) => {
+        if (!isMounted) return;
         if (data?.user?.role === "DOCTOR") {
           router.replace("/doctor/dashboard");
           return;
@@ -155,24 +162,39 @@ export default function DashboardPage() {
         if (data?.user?.email) setUserEmail(data.user.email);
         if (data?.user?.image) setUserImage(data.user.image);
       })
-      .catch(() => {
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
         // Fallback to default user
       });
 
     // Fetch live user appointments
-    fetch("/api/appointments")
-      .then((res) => res.json())
+    fetch("/api/appointments", { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) {
+          return { appointments: [] };
+        }
+        return res.json();
+      })
       .then((data) => {
+        if (!isMounted) return;
         if (data?.appointments && Array.isArray(data.appointments) && data.appointments.length > 0) {
           setAppointments(data.appointments);
         }
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching appointments:", err);
-        setLoading(false);
+        if (err?.name === "AbortError") return;
+        console.warn("Could not fetch appointments, using offline/cached data:", err?.message || err);
+        if (isMounted) {
+          setLoading(false);
+        }
       });
-  }, []);
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [router]);
 
   // Cancel appointment with refund
   const handleCancel = (id: string) => {

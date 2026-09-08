@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 80" width="100%" height="100%">
+  <!-- RuPay Text and Chevrons -->
+  <g transform="translate(10, 16)">
+    <!-- RuPay word -->
+    <text x="0" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="34" font-style="italic" fill="#0054A6">Ru</text>
+    <text x="44" y="38" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-size="34" font-style="italic" fill="#231F20">Pay</text>
+    <!-- Cyan & Green Chevrons -->
+    <path d="M 112 12 L 126 12 L 118 38 L 104 38 Z" fill="#00A859"/>
+    <path d="M 126 12 L 140 12 L 132 38 L 118 38 Z" fill="#F47920"/>
+  </g>
+</svg>

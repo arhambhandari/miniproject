@@ -74,9 +74,12 @@ export function DailyMedicationTracker() {
   };
 
   // Fetch live doctor-prescribed medications from DB
-  const loadMedications = () => {
-    fetch("/api/medications")
-      .then((res) => res.json())
+  const loadMedications = (signal?: AbortSignal) => {
+    fetch("/api/medications", { signal })
+      .then((res) => {
+        if (!res.ok) return { medications: [] };
+        return res.json();
+      })
       .then((data) => {
         if (data?.medications && Array.isArray(data.medications) && data.medications.length > 0) {
           setMedications(data.medications);
@@ -84,13 +87,16 @@ export function DailyMedicationTracker() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error loading medications:", err);
+        if (err?.name === "AbortError") return;
+        console.warn("Could not load medications, using offline/cached data:", err?.message || err);
         setLoading(false);
       });
   };
 
   useEffect(() => {
-    loadMedications();
+    const controller = new AbortController();
+    loadMedications(controller.signal);
+    return () => controller.abort();
   }, []);
 
   const handleToggleTaken = async (id: string) => {

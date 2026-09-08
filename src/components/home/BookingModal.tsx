@@ -20,13 +20,16 @@ import {
   Lock,
   ChevronRight,
   Sparkles,
-  CalendarDays
+  CalendarDays,
+  Volume2
 } from "lucide-react";
 import { toast } from "sonner";
 import Script from "next/script";
 import Image from "next/image";
 import type { Doctor } from "@/types";
 import { loadRazorpayScript } from "@/lib/razorpay";
+import { RazorpayCheckoutModal } from "@/components/payment/RazorpayCheckoutModal";
+import { playPaymentSuccessSound } from "@/lib/sound";
 
 interface BookingModalProps {
   doctor: Doctor | null;
@@ -36,11 +39,11 @@ interface BookingModalProps {
 
 export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps) {
   const [bookingDate, setBookingDate] = useState("");
-  const [bookingTime, setBookingTime] = useState("");
+  const [bookingTime, setBookingTime] = useState("10:30 AM");
   const [patientName, setPatientName] = useState("");
-  const [patientContact, setPatientContact] = useState("");
+  const [patientContact, setPatientContact] = useState("+91 98765 43210");
   const [patientEmail, setPatientEmail] = useState("");
-  const [disease, setDisease] = useState("");
+  const [disease, setDisease] = useState("General Health Consultation");
   const [showCustomDate, setShowCustomDate] = useState(false);
 
   // Payment method selection & options (UPI or Card)
@@ -56,6 +59,8 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
 
   const [modalStep, setModalStep] = useState<"details" | "success" | "error">("details");
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
+  const [razorpayOrder, setRazorpayOrder] = useState<any>(null);
   const [confirmedPaymentId, setConfirmedPaymentId] = useState("");
   const [emailPreview, setEmailPreview] = useState("");
   const [bookingErrorMessage, setBookingErrorMessage] = useState("");
@@ -207,160 +212,147 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
         throw new Error(orderData.error || "Order creation failed");
       }
 
-      // If simulated order (when user hasn't pasted API keys yet in .env)
-      if (orderData.isSimulated) {
-        toast.info(`Test Mode: Simulating ${paymentMethod === "upi" ? "UPI" : "Card"} payment...`);
-        
-        const simPayId = `pay_sim_${Date.now()}`;
-        setConfirmedPaymentId(simPayId);
+      setRazorpayOrder(orderData);
 
-        // Verify simulated payment
-        await fetch("/api/payments/verify", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            razorpay_order_id: orderData.id,
-            razorpay_payment_id: simPayId,
-            razorpay_signature: "simulated_signature",
-          }),
-        });
+      // Check if real Razorpay script is available AND valid key exists (not placeholder)
+      const hasRealKey =
+        orderData.key_id &&
+        !orderData.isSimulated &&
+        !orderData.key_id.includes("placeholder") &&
+        !orderData.key_id.includes("PASTE_YOUR_KEY");
 
-        // Save appointment
-        const res = await fetch("/api/appointments", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            doctorId: doctor.id,
-            date: bookingDate,
-            startTime: bookingTime,
-            disease,
-            patientName: patientName || "Verified Patient",
-            patientContact: patientContact || "+91 98765 43210",
-            email: patientEmail,
-            fee: doctor.fee ? `₹${doctor.fee.toLocaleString()}` : "₹1,500",
-            paymentId: simPayId,
-            paymentMethod: methodSummary,
-          }),
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          if (data.emailPreviewUrl) setEmailPreview(data.emailPreviewUrl);
-          setModalStep("success");
-          toast.success("Appointment successfully booked!");
-        } else {
-          const errData = await res.json().catch(() => ({}));
-          const msg = errData.error || "Failed to book appointment";
-          setBookingErrorMessage(msg);
-          toast.error(msg);
-          setModalStep("error");
+      if (hasRealKey) {
+        const isScriptLoaded = await loadRazorpayScript();
+        if (isScriptLoaded && typeof (window as any).Razorpay !== "undefined") {
+          launchOfficialRazorpay(orderData, methodSummary);
+          return;
         }
-        setIsProcessing(false);
-        return;
       }
 
-      // 2. Real Razorpay checkout flow
-      const isScriptLoaded = await loadRazorpayScript();
-      if (!isScriptLoaded || typeof (window as any).Razorpay === "undefined") {
-        toast.error("Unable to load Razorpay payment SDK. Please check your internet connection.");
-        setIsProcessing(false);
-        return;
-      }
-
-      const keyId = orderData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
-
-      const options = {
-        key: keyId,
-        amount: orderData.amount,
-        currency: orderData.currency || "INR",
-        name: "MediBook",
-        description: `Consultation with ${doctor.user.name}`,
-        order_id: orderData.id,
-        handler: async function (response: any) {
-          try {
-            setConfirmedPaymentId(response.razorpay_payment_id);
-            // Verify payment signature
-            const verifyRes = await fetch("/api/payments/verify", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                razorpay_order_id: response.razorpay_order_id,
-                razorpay_payment_id: response.razorpay_payment_id,
-                razorpay_signature: response.razorpay_signature,
-              }),
-            });
-            const verifyData = await verifyRes.json();
-
-            if (!verifyRes.ok || !verifyData.verified) {
-              toast.error("Payment verification failed. Please contact support.");
-              setModalStep("error");
-              setIsProcessing(false);
-              return;
-            }
-
-            // Save confirmed appointment
-            const res = await fetch("/api/appointments", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                doctorId: doctor.id,
-                date: bookingDate,
-                startTime: bookingTime,
-                disease,
-                patientName,
-                patientContact,
-                email: patientEmail,
-                fee: doctor.fee ? `₹${doctor.fee.toLocaleString()}` : "₹1,500",
-                paymentId: response.razorpay_payment_id,
-                paymentMethod: methodSummary,
-              }),
-            });
-
-            if (res.ok) {
-              const data = await res.json();
-              if (data.emailPreviewUrl) setEmailPreview(data.emailPreviewUrl);
-              setModalStep("success");
-              toast.success("Payment verified and appointment confirmed!");
-            } else {
-              const errData = await res.json().catch(() => ({}));
-              const msg = errData.error || "Failed to book appointment";
-              setBookingErrorMessage(msg);
-              toast.error(msg);
-              setModalStep("error");
-            }
-          } catch (e) {
-            console.error("Post-payment error:", e);
-            setModalStep("error");
-          } finally {
-            setIsProcessing(false);
-          }
-        },
-        prefill: {
-          name: patientName,
-          email: patientEmail,
-          contact: patientContact,
-          method: paymentMethod === "upi" ? "upi" : "card",
-          vpa: paymentMethod === "upi" && upiId ? upiId : undefined,
-        },
-        theme: { color: "#2563eb" },
-        modal: {
-          ondismiss: function () {
-            setIsProcessing(false);
-            toast.info("Payment window closed.");
-          },
-        },
-      };
-
-      const rzp = new (window as any).Razorpay(options);
-      rzp.on("payment.failed", function (response: any) {
-        toast.error(response?.error?.description || "Payment failed. Please try again.");
-        setIsProcessing(false);
-      });
-      rzp.open();
+      // Launch interactive Razorpay Standard Checkout Test Mode simulator
+      setIsProcessing(false);
+      setIsRazorpayModalOpen(true);
     } catch (error: any) {
       console.error("Booking error:", error);
       toast.error(error?.message || "Booking failed");
+      setBookingErrorMessage(error?.message || "Failed to initialize payment gateway");
       setModalStep("error");
+      setIsProcessing(false);
+    }
+  };
+
+  const launchOfficialRazorpay = (orderData: any, summary: string) => {
+    const keyId = orderData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
+
+    const options = {
+      key: keyId,
+      amount: orderData.amount,
+      currency: orderData.currency || "INR",
+      name: "MediBook",
+      description: `Consultation with ${doctor?.user?.name || "Doctor"}`,
+      order_id: orderData.id,
+      handler: async function (response: any) {
+        await handlePaymentSuccess({
+          razorpay_order_id: response.razorpay_order_id,
+          razorpay_payment_id: response.razorpay_payment_id,
+          razorpay_signature: response.razorpay_signature,
+          method: summary,
+        });
+      },
+      prefill: {
+        name: patientName,
+        email: patientEmail,
+        contact: patientContact,
+        method: paymentMethod === "upi" ? "upi" : "card",
+        vpa: paymentMethod === "upi" && upiId ? upiId : undefined,
+      },
+      theme: { color: "#2563eb" },
+      modal: {
+        ondismiss: function () {
+          setIsProcessing(false);
+          toast.info("Payment window closed.");
+        },
+      },
+    };
+
+    const rzp = new (window as any).Razorpay(options);
+    rzp.on("payment.failed", function (response: any) {
+      toast.error(response?.error?.description || "Payment failed. Please try again.");
+      setBookingErrorMessage(response?.error?.description || "Payment failed.");
+      setIsProcessing(false);
+      setModalStep("error");
+    });
+    rzp.open();
+  };
+
+  const handlePaymentSuccess = async (paymentData: {
+    razorpay_order_id: string;
+    razorpay_payment_id: string;
+    razorpay_signature: string;
+    method: string;
+  }) => {
+    setIsRazorpayModalOpen(false);
+    setIsProcessing(true);
+    setConfirmedPaymentId(paymentData.razorpay_payment_id);
+    setConfirmedPaymentMethod(paymentData.method);
+
+    try {
+      // 1. Verify signature on server
+      const verifyRes = await fetch("/api/payments/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          razorpay_order_id: paymentData.razorpay_order_id,
+          razorpay_payment_id: paymentData.razorpay_payment_id,
+          razorpay_signature: paymentData.razorpay_signature,
+        }),
+      });
+      const verifyData = await verifyRes.json();
+
+      if (!verifyRes.ok || !verifyData.verified) {
+        toast.error("Payment verification failed. Please contact support.");
+        setBookingErrorMessage("Payment verification signature mismatch.");
+        setModalStep("error");
+        setIsProcessing(false);
+        return;
+      }
+
+      // 2. Save confirmed appointment in database
+      const res = await fetch("/api/appointments", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctorId: doctor?.id,
+          date: bookingDate,
+          startTime: bookingTime,
+          disease: disease || "General Consultation",
+          patientName: patientName || "Verified Patient",
+          patientContact: patientContact || "+91 98765 43210",
+          email: patientEmail,
+          fee: doctor?.fee ? `₹${doctor.fee.toLocaleString()}` : "₹1,500",
+          paymentId: paymentData.razorpay_payment_id,
+          paymentMethod: paymentData.method,
+        }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.emailPreviewUrl) setEmailPreview(data.emailPreviewUrl);
+        setModalStep("success");
+        playPaymentSuccessSound();
+        toast.success("Payment verified and appointment confirmed!");
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        const msg = errData.error || "Failed to book appointment";
+        setBookingErrorMessage(msg);
+        toast.error(msg);
+        setModalStep("error");
+      }
+    } catch (e: any) {
+      console.error("Post-payment error:", e);
+      setBookingErrorMessage(e?.message || "Failed to finalize appointment record.");
+      setModalStep("error");
+    } finally {
       setIsProcessing(false);
     }
   };
@@ -691,10 +683,10 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
                     {/* Quick Apps Grid */}
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                       {[
-                        { id: "gpay", name: "Google Pay", color: "from-blue-500 to-emerald-500", badge: "GPay" },
-                        { id: "phonepe", name: "PhonePe", color: "from-purple-600 to-indigo-600", badge: "Pe" },
-                        { id: "paytm", name: "Paytm UPI", color: "from-sky-500 to-blue-600", badge: "Paytm" },
-                        { id: "bhim", name: "BHIM / Other", color: "from-orange-500 to-emerald-600", badge: "BHIM" },
+                        { id: "gpay", name: "Google Pay", logo: "/images/payments/gpay.svg", imgClass: "h-3.5" },
+                        { id: "phonepe", name: "PhonePe", logo: "/images/payments/phonepe.svg", imgClass: "h-5" },
+                        { id: "paytm", name: "Paytm UPI", logo: "/images/payments/paytm.svg", imgClass: "h-3" },
+                        { id: "bhim", name: "BHIM / Other", logo: "/images/payments/bhim.svg", imgClass: "h-4" },
                       ].map((app) => {
                         const isSelected = selectedUpiApp === app.id;
                         return (
@@ -708,15 +700,15 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
                               if (app.id === "phonepe" && !upiId) setUpiId(`${baseHandle}@ybl`);
                               if (app.id === "paytm" && !upiId) setUpiId(`${baseHandle}@paytm`);
                             }}
-                            className={`p-2 rounded-xl border text-center transition-all flex flex-col items-center gap-1 cursor-pointer ${
+                            className={`p-2.5 rounded-xl border text-center transition-all flex flex-col items-center gap-1.5 cursor-pointer ${
                               isSelected
                                 ? "bg-white dark:bg-slate-700 border-blue-500 ring-2 ring-blue-500/20 shadow-xs"
-                                : "bg-white/60 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700 hover:border-slate-300"
+                                : "bg-white/70 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300"
                             }`}
                           >
-                            <span className={`size-6 rounded-lg bg-gradient-to-br ${app.color} text-white font-extrabold text-[10px] flex items-center justify-center shadow-2xs`}>
-                              {app.badge}
-                            </span>
+                            <div className="size-7 rounded-lg bg-white dark:bg-slate-800 p-0.5 border border-slate-100 dark:border-slate-700 shadow-2xs flex items-center justify-center shrink-0">
+                              <img src={app.logo} alt={app.name} className={`${app.imgClass} w-auto object-contain`} />
+                            </div>
                             <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200">
                               {app.name}
                             </span>
@@ -773,10 +765,10 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
                       <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
                         Card Details
                       </span>
-                      <div className="flex items-center gap-1 text-[10px] font-extrabold text-slate-400">
-                        <span className="px-1.5 py-0.5 rounded bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">VISA</span>
-                        <span className="px-1.5 py-0.5 rounded bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300">MC</span>
-                        <span className="px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">RuPay</span>
+                      <div className="flex items-center gap-1.5">
+                        <img src="/images/payments/visa.svg" alt="Visa" className="h-3 w-auto object-contain rounded-xs border border-slate-200/80 dark:border-slate-700 bg-white px-1 py-0.5" />
+                        <img src="/images/payments/mastercard.svg" alt="Mastercard" className="h-3 w-auto object-contain rounded-xs border border-slate-200/80 dark:border-slate-700 bg-white px-1 py-0.5" />
+                        <img src="/images/payments/rupay.svg" alt="RuPay" className="h-3 w-auto object-contain rounded-xs border border-slate-200/80 dark:border-slate-700 bg-white px-1 py-0.5" />
                       </div>
                     </div>
 
@@ -792,11 +784,16 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
                           value={cardNumber}
                           onChange={(e) => handleCardNumberChange(e.target.value)}
                           maxLength={19}
-                          className="w-full h-10 px-3.5 pr-16 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full h-10 px-3.5 pr-20 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs font-mono font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                         {getCardBrand(cardNumber) && (
-                          <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-extrabold text-blue-600 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-md">
-                            {getCardBrand(cardNumber)}
+                          <span className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1 bg-slate-50 dark:bg-slate-700/80 px-2 py-1 rounded-md border border-slate-200 dark:border-slate-600">
+                            {getCardBrand(cardNumber) === "Visa" && <img src="/images/payments/visa.svg" alt="Visa" className="h-2.5 w-auto object-contain" />}
+                            {getCardBrand(cardNumber) === "Mastercard" && <img src="/images/payments/mastercard.svg" alt="Mastercard" className="h-3 w-auto object-contain" />}
+                            {getCardBrand(cardNumber) === "RuPay" && <img src="/images/payments/rupay.svg" alt="RuPay" className="h-2.5 w-auto object-contain" />}
+                            <span className="text-[10px] font-black text-slate-700 dark:text-slate-300">
+                              {getCardBrand(cardNumber)}
+                            </span>
                           </span>
                         )}
                       </div>
@@ -927,20 +924,41 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
         {/* Success Screen */}
         {modalStep === "success" && (
           <div className="p-8 text-center space-y-5">
-            <div className="mx-auto size-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-500/10 ring-8 ring-emerald-50/50">
-              <CheckCircle2 className="size-10" />
+            <div className="relative mx-auto size-20 flex items-center justify-center">
+              <span className="absolute inset-0 rounded-full bg-emerald-500/20 animate-ping" />
+              <div className="size-20 bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-3xl flex items-center justify-center shadow-lg shadow-emerald-500/10 ring-8 ring-emerald-50/50 z-10">
+                <CheckCircle2 className="size-10" />
+              </div>
             </div>
 
             <div>
-              <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
-                Booking Confirmed
-              </span>
+              <div className="flex items-center justify-center gap-2 mb-2">
+                <span className="text-xs font-bold text-emerald-600 uppercase tracking-wider">
+                  Booking Confirmed
+                </span>
+                <span className="text-slate-300 dark:text-slate-600">•</span>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-[11px] font-bold border border-emerald-200/60 dark:border-emerald-800/60">
+                  <Volume2 className="size-3 text-emerald-600 animate-pulse" />
+                  <span>Payment Ticking Chime Confirmed</span>
+                </div>
+              </div>
               <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mt-1">
                 Your Appointment is Scheduled!
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1.5">
                 We've reserved your consultation with {doctor?.user?.name || "your doctor"}. A confirmation receipt has been sent to your email.
               </p>
+
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => playPaymentSuccessSound()}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
+                >
+                  <Volume2 className="size-3.5 text-emerald-600 dark:text-emerald-400" />
+                  <span>Hear Payment Chime 🔔</span>
+                </button>
+              </div>
             </div>
 
             {/* Receipt Summary Card */}
@@ -1040,6 +1058,29 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
           </div>
         )}
       </Modal>
+
+      {/* Razorpay Authentic Standard Checkout Test Mode Simulator */}
+      {isRazorpayModalOpen && doctor && (
+        <RazorpayCheckoutModal
+          isOpen={isRazorpayModalOpen}
+          onClose={() => {
+            setIsRazorpayModalOpen(false);
+            setIsProcessing(false);
+          }}
+          orderId={razorpayOrder?.id || `order_test_${Date.now()}`}
+          amount={doctor.fee || 1500}
+          doctorName={doctor.user.name}
+          patientName={patientName || "Verified Patient"}
+          patientEmail={patientEmail}
+          patientContact={patientContact}
+          onSuccess={handlePaymentSuccess}
+          onFailure={(errMsg) => {
+            setBookingErrorMessage(errMsg);
+            toast.error(errMsg);
+            setModalStep("error");
+          }}
+        />
+      )}
     </>
   );
 }

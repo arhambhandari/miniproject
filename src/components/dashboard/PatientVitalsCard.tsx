@@ -116,8 +116,12 @@ export function PatientVitalsCard() {
   };
 
   useEffect(() => {
-    fetch("/api/clinical-records")
-      .then((res) => res.json())
+    const controller = new AbortController();
+    fetch("/api/clinical-records", { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) return { records: [], latestVitals: null };
+        return res.json();
+      })
       .then((data) => {
         if (data?.latestVitals) {
           const lv = data.latestVitals;
@@ -151,7 +155,12 @@ export function PatientVitalsCard() {
           );
         }
       })
-      .catch((err) => console.error("Error fetching patient vitals:", err));
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        console.warn("Could not fetch patient vitals, using defaults:", err?.message || err);
+      });
+
+    return () => controller.abort();
   }, []);
 
   const handleLogVital = () => {

@@ -49,6 +49,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       if (session.user) {
         session.user.id = token.id as string;
         session.user.role = token.role as string;
+
+        // Automatically synchronize session user ID with live database by email if needed
+        if (session.user.email) {
+          try {
+            const dbUser = await prisma.user.findUnique({
+              where: { email: session.user.email },
+              select: { id: true, role: true, name: true },
+            });
+            if (dbUser) {
+              session.user.id = dbUser.id;
+              session.user.role = dbUser.role;
+              if (dbUser.name) session.user.name = dbUser.name;
+            }
+          } catch {
+            // Fallback to token values if database lookup is temporarily unavailable
+          }
+        }
       }
       return session;
     }

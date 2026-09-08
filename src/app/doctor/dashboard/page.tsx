@@ -92,9 +92,16 @@ export default function DoctorDashboardPage() {
 
   // Load Session and verify DOCTOR role
   useEffect(() => {
-    fetch("/api/auth/session")
-      .then((res) => res.json())
+    let isMounted = true;
+    const controller = new AbortController();
+
+    fetch("/api/auth/session", { signal: controller.signal })
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
       .then((data) => {
+        if (!isMounted) return;
         if (!data?.user) {
           router.replace("/login");
           return;
@@ -106,16 +113,27 @@ export default function DoctorDashboardPage() {
         if (data.user.name) setDoctorName(data.user.name);
         if (data.user.email) setDoctorEmail(data.user.email);
       })
-      .catch((err) => console.error("Session verification error:", err));
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        console.warn("Session verification warning:", err?.message || err);
+      });
 
-    loadDoctorProfile();
-    loadAppointments();
-    loadPatients();
+    loadDoctorProfile(controller.signal);
+    loadAppointments(controller.signal);
+    loadPatients(controller.signal);
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
   }, [router]);
 
-  const loadDoctorProfile = () => {
-    fetch("/api/doctor/profile")
-      .then((res) => res.json())
+  const loadDoctorProfile = (signal?: AbortSignal) => {
+    fetch("/api/doctor/profile", { signal })
+      .then((res) => {
+        if (!res.ok) return null;
+        return res.json();
+      })
       .then((data) => {
         if (data?.profile) {
           setDoctorProfile(data.profile);
@@ -126,12 +144,18 @@ export default function DoctorDashboardPage() {
           if (data.profile.fee) setConsultationFee(data.profile.fee);
         }
       })
-      .catch((err) => console.error("Error fetching doctor profile:", err));
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        console.warn("Could not fetch doctor profile:", err?.message || err);
+      });
   };
 
-  const loadAppointments = () => {
-    fetch("/api/appointments")
-      .then((res) => res.json())
+  const loadAppointments = (signal?: AbortSignal) => {
+    fetch("/api/appointments", { signal })
+      .then((res) => {
+        if (!res.ok) return { appointments: [] };
+        return res.json();
+      })
       .then((data) => {
         if (data?.appointments && Array.isArray(data.appointments)) {
           setAppointments(data.appointments);
@@ -142,15 +166,19 @@ export default function DoctorDashboardPage() {
         setLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching doctor appointments:", err);
+        if (err?.name === "AbortError") return;
+        console.warn("Could not fetch doctor appointments:", err?.message || err);
         setLoading(false);
       });
   };
 
-  const loadPatients = () => {
+  const loadPatients = (signal?: AbortSignal) => {
     setPatientsLoading(true);
-    fetch("/api/doctor/patients")
-      .then((res) => res.json())
+    fetch("/api/doctor/patients", { signal })
+      .then((res) => {
+        if (!res.ok) return { patients: [] };
+        return res.json();
+      })
       .then((data) => {
         if (data?.patients && Array.isArray(data.patients)) {
           setPatients(data.patients);
@@ -161,7 +189,8 @@ export default function DoctorDashboardPage() {
         setPatientsLoading(false);
       })
       .catch((err) => {
-        console.error("Error fetching patients:", err);
+        if (err?.name === "AbortError") return;
+        console.warn("Could not fetch patients:", err?.message || err);
         setPatientsLoading(false);
       });
   };

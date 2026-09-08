@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 80" width="100%" height="100%">
+  <!-- UPI Arrows -->
+  <g transform="translate(10, 8)">
+    <!-- Right arrow green -->
+    <path d="M48 32 L30 64 L16 64 L30 40 L16 40 L28 16 L48 32 Z" fill="#097939"/>
+    <!-- Left arrow orange -->
+    <path d="M36 32 L18 0 L32 0 L18 24 L32 24 L20 48 L36 32 Z" fill="#F47920"/>
+  </g>
+  <!-- Text UPI -->
+  <text x="70" y="52" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif" font-weight="900" font-style="italic" font-size="44" fill="#2E3192" letter-spacing="-1">UPI</text>
+</svg>
