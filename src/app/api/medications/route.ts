@@ -192,7 +192,7 @@ export async function PATCH(req: Request) {
     if (typeof taken === "boolean") {
       updateData.taken = taken;
       updateData.takenAt = taken
-        ? new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        ? (body.takenAt || new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
         : null;
     }
     if (daysRemaining !== undefined) updateData.daysRemaining = Number(daysRemaining);

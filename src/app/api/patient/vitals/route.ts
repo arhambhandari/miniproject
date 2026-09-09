@@ -55,7 +55,7 @@ export async function GET(req: Request) {
   }
 }
 
-// POST: Patient updates daily wellness vitals (REJECTS ANY BP MODIFICATIONS)
+// POST: Clinical vitals update (Strictly restricted to doctors; patients can only log medication adherence)
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -64,26 +64,38 @@ export async function POST(req: Request) {
     }
 
     const isPatient = session.user.role === "PATIENT";
-    const body = await req.json();
-    const { bloodPressure, heartRate, bloodSugar, spo2, weight, temperature } = body;
+    const body = await req.json().catch(() => ({}));
+    const { bloodPressure } = body;
 
-    // STRICT REGULATION CHECK: If a patient attempts to submit or modify blood pressure, reject with 403 Forbidden
-    if (isPatient && bloodPressure !== undefined && bloodPressure !== null) {
+    // PATIENT RESTRICTION: Patients can only log their medication adherence; all clinical vitals are doctor-only.
+    if (isPatient) {
+      if (bloodPressure !== undefined && bloodPressure !== null) {
+        return NextResponse.json(
+          {
+            error: "Access Denied: Blood pressure is a controlled clinical vital and can only be measured and recorded by a certified doctor.",
+            field: "bloodPressure",
+            allowedForRole: "DOCTOR",
+          },
+          { status: 403 }
+        );
+      }
+
       return NextResponse.json(
         {
-          error: "Access Denied: Blood pressure is a controlled clinical vital and can only be measured and recorded by a certified doctor.",
-          field: "bloodPressure",
+          error: "Access Denied: Clinical health vitals cannot be modified by patients. Patients are only permitted to log their daily medication adherence. Clinical vitals are recorded and updated exclusively by your attending physician.",
           allowedForRole: "DOCTOR",
         },
         { status: 403 }
       );
     }
 
-    // Return success for patient home-tracked vitals (Blood pressure remains unchanged)
+    // Doctor updates vitals
+    const { heartRate, bloodSugar, spo2, weight, temperature } = body;
     return NextResponse.json({
       success: true,
-      message: "Daily wellness vitals recorded successfully. Blood pressure remains certified by your doctor.",
+      message: "Clinical vitals recorded successfully by physician.",
       updatedVitals: {
+        bloodPressure,
         heartRate,
         bloodSugar,
         spo2,
