@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   Stethoscope,
-  Pill
+  Pill,
+  Lock
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -27,7 +28,7 @@ export function MedicalRecordsView({ userName = "Rahul Sharma", onReturnToOvervi
   const [selectedFilter, setSelectedFilter] = useState<"all" | "lab" | "prescription">("all");
 
   const vitals = [
-    { label: "Blood Pressure", value: "120/80", unit: "mmHg", icon: Activity, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/30", status: "Optimal" },
+    { label: "Blood Pressure", value: "120/80", unit: "mmHg", icon: Activity, color: "text-blue-500", bg: "bg-blue-50 dark:bg-blue-900/30", status: "Doctor Verified (Locked)" },
     { label: "Heart Rate", value: "72", unit: "bpm", icon: Heart, color: "text-rose-500", bg: "bg-rose-50 dark:bg-rose-900/30", status: "Normal" },
     { label: "Blood Group", value: "A(II) Rh+", unit: "", icon: Droplet, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/30", status: "Verified" },
     { label: "Blood Glucose", value: "94", unit: "mg/dL", icon: Activity, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-900/30", status: "Fasting Normal" },

@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   HeartHandshake,
   Check,
+  Lock,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -135,9 +136,13 @@ export function PatientProfileCard({
             A(II) Rh+
           </span>
         </div>
-        <div className="bg-slate-50 dark:bg-slate-700/40 rounded-xl p-2">
-          <span className="text-[10px] text-slate-400 dark:text-slate-400 block font-medium">
-            Vitals (BP)
+        <div
+          className="bg-slate-50 dark:bg-slate-700/40 rounded-xl p-2 relative group cursor-pointer"
+          title="Blood Pressure is doctor-controlled and can only be updated by your physician"
+          onClick={() => toast.info("🔒 Blood Pressure can only be measured and updated by your attending doctor.")}
+        >
+          <span className="text-[10px] text-slate-400 dark:text-slate-400 flex items-center justify-center gap-0.5 font-medium">
+            <Lock className="size-2.5 text-blue-500" /> BP (Doctor)
           </span>
           <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
             120/80

@@ -415,15 +415,21 @@ export function DoctorPatientCareModal({
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
-                      Blood Pressure (mmHg)
-                    </label>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400">
+                        Blood Pressure (mmHg)
+                      </label>
+                      <span className="text-[9px] font-black tracking-wider uppercase px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                        Doctor Only
+                      </span>
+                    </div>
                     <input
                       type="text"
+                      data-testid="doctor-bp-input"
                       value={bloodPressure}
                       onChange={(e) => setBloodPressure(e.target.value)}
                       placeholder="120/80"
-                      className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white"
+                      className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-blue-300 dark:border-blue-700 text-xs font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500"
                     />
                   </div>
 
