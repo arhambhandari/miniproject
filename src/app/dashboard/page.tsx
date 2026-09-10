@@ -37,6 +37,7 @@ import { MedicalRecordsView } from "@/components/dashboard/MedicalRecordsView";
 import { ConsultationsView } from "@/components/dashboard/ConsultationsView";
 import { NotificationsView } from "@/components/dashboard/NotificationsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
+import { SimulatorFloatingButton } from "@/components/notifications/SimulatorFloatingButton";
 import { MOCK_DOCTORS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageContext";
 import type { Appointment, Doctor } from "@/types";
@@ -840,6 +841,9 @@ export default function DashboardPage() {
           }}
         />
       )}
+
+      {/* WhatsApp & SMS Health Alert Dispatch Simulator Floating Action */}
+      <SimulatorFloatingButton />
     </div>
   );
 }

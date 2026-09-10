@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   HeartPulse,
   CalendarCheck,
+  Clock,
   Pill,
   MessageSquare,
   Building2,
@@ -101,6 +102,18 @@ export function DoctorSidebar({
             </motion.button>
           );
         })}
+
+        {/* Schedule & Availability Management Link */}
+        <motion.div whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.92 }}>
+          <Link
+            href="/doctor/schedule"
+            data-testid="sidebar-schedule-link"
+            title="OPD Schedule & Slot Manager"
+            className="size-12 rounded-2xl flex items-center justify-center text-blue-100/80 hover:text-white hover:bg-white/15 transition-colors cursor-pointer"
+          >
+            <Clock className="size-5" />
+          </Link>
+        </motion.div>
 
         {/* Quick Prescribe Action Button */}
         {onQuickPrescribe && (

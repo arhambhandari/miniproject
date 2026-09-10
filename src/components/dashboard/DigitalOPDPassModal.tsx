@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { 
   X, 
   Printer, 
@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import type { Appointment } from "@/types";
+import { WhatsAppSmsSimulatorModal } from "@/components/notifications/WhatsAppSmsSimulatorModal";
 
 interface DigitalOPDPassModalProps {
   appointment: Appointment;
@@ -25,6 +26,7 @@ interface DigitalOPDPassModalProps {
 }
 
 export function DigitalOPDPassModal({ appointment, onClose }: DigitalOPDPassModalProps) {
+  const [isWhatsAppSimOpen, setIsWhatsAppSimOpen] = useState(false);
   const handlePrint = () => {
     toast.success("Sending OPD Pass to printer...");
     setTimeout(() => {
@@ -191,25 +193,41 @@ export function DigitalOPDPassModal({ appointment, onClose }: DigitalOPDPassModa
           </div>
 
           {/* Footer Actions */}
-          <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex items-center justify-between gap-3">
+          <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 flex flex-wrap sm:flex-nowrap items-center justify-between gap-2.5">
             <button
               onClick={handlePrint}
-              className="flex-1 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
+              className="flex-1 py-2.5 px-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-sm"
             >
               <Printer className="size-3.5 text-slate-500" />
-              <span>Print Pass</span>
+              <span>Print</span>
+            </button>
+
+            <button
+              onClick={() => setIsWhatsAppSimOpen(true)}
+              data-testid="send-pass-whatsapp-btn"
+              className="flex-1 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-emerald-500/20"
+            >
+              <span className="font-mono text-sm">💬</span>
+              <span>WhatsApp</span>
             </button>
 
             <button
               onClick={handleDownload}
-              className="flex-1 py-2.5 px-4 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-blue-500/20"
+              className="flex-1 py-2.5 px-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-md shadow-blue-500/20"
             >
               <Download className="size-3.5" />
-              <span>Save Pass</span>
+              <span>Save PDF</span>
             </button>
           </div>
         </motion.div>
       </div>
+
+      <WhatsAppSmsSimulatorModal
+        isOpen={isWhatsAppSimOpen}
+        onClose={() => setIsWhatsAppSimOpen(false)}
+        defaultTemplate="APPOINTMENT_PASS"
+        initialAppointment={appointment}
+      />
     </AnimatePresence>
   );
 }
