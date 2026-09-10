@@ -51,3 +51,36 @@ export type Review = {
   date: string;
   comment: string;
 };
+
+export type QueueTokenItem = {
+  tokenNumber: string;
+  patientName: string;
+  time: string;
+  status: "SERVING" | "CALLED" | "WAITING" | "COMPLETED" | "SKIPPED";
+  patientId?: string;
+};
+
+export type QueueState = {
+  doctorId?: string;
+  doctorName: string;
+  hospitalName: string;
+  roomNumber: string;
+  currentServingToken: string;
+  currentPatientName: string;
+  status: "ACTIVE" | "EMERGENCY_DELAY" | "PAUSED" | "IDLE";
+  delayMinutes: number;
+  delayReason?: string;
+  tokens: QueueTokenItem[];
+  lastUpdated: number;
+  announcement?: string;
+};
+
+export type QueueActionType = "CALL_NEXT" | "CALL_DIRECT" | "EMERGENCY_DELAY" | "RESOLVE_DELAY" | "RESET";
+
+export type QueueActionPayload = {
+  action: QueueActionType;
+  doctorId?: string;
+  tokenNumber?: string;
+  delayMinutes?: number;
+  delayReason?: string;
+};

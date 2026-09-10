@@ -41,6 +41,7 @@ import { DoctorPatientCareModal } from "@/components/doctor/DoctorPatientCareMod
 import { DoctorRevenueModal } from "@/components/doctor/DoctorRevenueModal";
 import { DoctorNotificationsDrawer } from "@/components/doctor/DoctorNotificationsDrawer";
 import { DoctorProfileEditor } from "@/components/doctor/DoctorProfileEditor";
+import { DoctorOPDQueueConsole } from "@/components/doctor/DoctorOPDQueueConsole";
 
 export default function DoctorDashboardPage() {
   const router = useRouter();
@@ -572,13 +573,16 @@ export default function DoctorDashboardPage() {
 
             {/* TAB 1: APPOINTMENTS & SCHEDULE */}
             {activeTab === "appointments" && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, amount: 0.15 }}
-                transition={{ duration: 0.5 }}
-                className="bg-white dark:bg-slate-800/90 rounded-[28px] p-6 border border-slate-200/80 dark:border-slate-700/80 shadow-sm"
-              >
+              <div className="space-y-6">
+                <DoctorOPDQueueConsole />
+
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: false, amount: 0.15 }}
+                  transition={{ duration: 0.5 }}
+                  className="bg-white dark:bg-slate-800/90 rounded-[28px] p-6 border border-slate-200/80 dark:border-slate-700/80 shadow-sm"
+                >
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
                   <div>
                     <div className="flex items-center gap-2 mb-1">
@@ -756,6 +760,7 @@ export default function DoctorDashboardPage() {
                   </div>
                 )}
               </motion.div>
+            </div>
             )}
 
             {/* TAB 2: PATIENT CARE & PRESCRIPTIONS */}

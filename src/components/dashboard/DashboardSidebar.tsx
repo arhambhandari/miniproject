@@ -40,13 +40,13 @@ export function DashboardSidebar({
   ];
 
   return (
-    <aside className="w-20 lg:w-24 bg-blue-600 dark:bg-blue-700 text-white rounded-[32px] p-4 flex flex-col items-center justify-between shadow-xl shadow-blue-500/10 shrink-0 transition-all">
+    <aside className="w-20 lg:w-24 bg-blue-600 dark:bg-blue-700 text-white rounded-[32px] p-3.5 sm:p-4 flex flex-col items-center shadow-xl shadow-blue-500/10 shrink-0 transition-all">
       {/* Brand Logo */}
-      <div className="flex flex-col items-center gap-2 pt-2">
+      <div className="flex flex-col items-center gap-1.5 pt-1">
         <motion.div whileHover={{ scale: 1.08, rotate: [0, -5, 5, 0] }} whileTap={{ scale: 0.95 }}>
           <Link
             href="/"
-            className="size-12 rounded-2xl bg-white/15 hover:bg-white/25 flex items-center justify-center transition-all group backdrop-blur-sm"
+            className="size-11 sm:size-12 rounded-2xl bg-white/15 hover:bg-white/25 flex items-center justify-center transition-all group backdrop-blur-sm"
             title="MediBook Home"
           >
             <HeartPulse className="size-6 text-white group-hover:scale-110 transition-transform" />
@@ -58,7 +58,7 @@ export function DashboardSidebar({
       </div>
 
       {/* Main Navigation Icons */}
-      <nav className="flex flex-col items-center gap-3 my-auto py-6">
+      <nav className="flex flex-col items-center gap-2.5 my-3">
         {navItems.map((item) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
@@ -69,7 +69,7 @@ export function DashboardSidebar({
               whileTap={{ scale: 0.92 }}
               onClick={() => setActiveTab(item.id)}
               title={item.label}
-              className={`relative size-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer group ${
+              className={`relative size-11 sm:size-12 rounded-2xl flex items-center justify-center transition-colors cursor-pointer group ${
                 isActive
                   ? "text-blue-600 shadow-md shadow-black/10"
                   : "text-blue-100/80 hover:text-white hover:bg-white/15"
@@ -99,20 +99,20 @@ export function DashboardSidebar({
             else setActiveTab("doctors");
           }}
           title={t("book_appointment")}
-          className="size-12 rounded-2xl bg-white/20 hover:bg-white text-white hover:text-blue-600 flex items-center justify-center transition-colors cursor-pointer mt-2 group border border-white/20"
+          className="size-11 sm:size-12 rounded-2xl bg-white/20 hover:bg-white text-white hover:text-blue-600 flex items-center justify-center transition-colors cursor-pointer mt-1 group border border-white/20"
         >
           <PlusCircle className="size-5" />
         </motion.button>
       </nav>
 
       {/* Bottom Actions */}
-      <div className="flex flex-col items-center gap-3 pb-2 pt-4 border-t border-blue-500/40 w-full">
+      <div className="flex flex-col items-center gap-2 pt-3 border-t border-blue-500/40 w-full mt-1">
         <motion.button
           whileHover={{ scale: 1.08 }}
           whileTap={{ scale: 0.92 }}
           onClick={() => setActiveTab("notifications")}
           title={t("notifications")}
-          className={`size-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer relative ${
+          className={`size-10 sm:size-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer relative ${
             activeTab === "notifications"
               ? "bg-white text-blue-600"
               : "text-blue-100 hover:text-white hover:bg-white/15"
@@ -127,7 +127,7 @@ export function DashboardSidebar({
           whileTap={{ scale: 0.92 }}
           onClick={() => setActiveTab("settings")}
           title={t("settings")}
-          className={`size-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
+          className={`size-10 sm:size-11 rounded-xl flex items-center justify-center transition-colors cursor-pointer ${
             activeTab === "settings"
               ? "bg-white text-blue-600"
               : "text-blue-100 hover:text-white hover:bg-white/15"
@@ -141,7 +141,7 @@ export function DashboardSidebar({
           whileTap={{ scale: 0.92 }}
           onClick={() => signOut({ callbackUrl: "/" })}
           title={t("logout")}
-          className="size-11 rounded-xl flex items-center justify-center text-blue-200 hover:text-red-200 hover:bg-red-500/20 transition-all cursor-pointer mt-1"
+          className="size-10 sm:size-11 rounded-xl flex items-center justify-center text-blue-200 hover:text-red-200 hover:bg-red-500/20 transition-all cursor-pointer"
         >
           <LogOut className="size-5" />
         </motion.button>
