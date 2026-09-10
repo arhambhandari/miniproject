@@ -42,6 +42,7 @@ import { DoctorRevenueModal } from "@/components/doctor/DoctorRevenueModal";
 import { DoctorNotificationsDrawer } from "@/components/doctor/DoctorNotificationsDrawer";
 import { DoctorProfileEditor } from "@/components/doctor/DoctorProfileEditor";
 import { DoctorOPDQueueConsole } from "@/components/doctor/DoctorOPDQueueConsole";
+import { AmbientBackgroundGlow } from "@/components/ui/AmbientBackgroundGlow";
 
 export default function DoctorDashboardPage() {
   const router = useRouter();
@@ -335,7 +336,8 @@ export default function DoctorDashboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-900 transition-colors p-3 sm:p-4 lg:p-6 flex flex-col">
+    <div className="min-h-screen bg-[#f8fafc] dark:bg-slate-900 transition-colors p-3 sm:p-4 lg:p-6 flex flex-col relative">
+      <AmbientBackgroundGlow />
       {/* Main App Container matching Patient Dashboard */}
       <div className="flex flex-1 gap-4 lg:gap-6 max-w-[1600px] mx-auto w-full">
         {/* Left Floating Blue Pill Sidebar */}

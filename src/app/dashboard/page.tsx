@@ -38,6 +38,7 @@ import { ConsultationsView } from "@/components/dashboard/ConsultationsView";
 import { NotificationsView } from "@/components/dashboard/NotificationsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
 import { SimulatorFloatingButton } from "@/components/notifications/SimulatorFloatingButton";
+import { AmbientBackgroundGlow } from "@/components/ui/AmbientBackgroundGlow";
 import { MOCK_DOCTORS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageContext";
 import type { Appointment, Doctor } from "@/types";
@@ -239,7 +240,8 @@ export default function DashboardPage() {
   const completedAppointments = appointments.filter((a) => a.status === "Completed");
 
   return (
-    <div className="min-h-screen bg-[#F4F7FB] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-[#F4F7FB] dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col font-sans transition-colors relative">
+      <AmbientBackgroundGlow />
       <div className="flex-1 flex p-2.5 sm:p-4 lg:p-6 gap-4 lg:gap-6 max-w-[1750px] mx-auto w-full">
         {/* Desktop Left Navigation Rail */}
         <div className="hidden md:flex shrink-0 self-start sticky top-4 lg:top-6 z-30">

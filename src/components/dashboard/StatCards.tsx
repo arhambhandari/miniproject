@@ -4,6 +4,7 @@ import React from "react";
 import { MoreHorizontal, TrendingUp, TrendingDown, Building2, Pill, FlaskConical } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/components/LanguageContext";
+import { AnimatedCounter } from "@/components/ui/AnimatedCounter";
 
 interface StatCardsProps {
   completedVisits?: number;
@@ -27,7 +28,7 @@ export function StatCards({
         viewport={{ once: false, amount: 0.2 }}
         whileHover={{ y: -4, transition: { duration: 0.2 } }}
         transition={{ duration: 0.45, delay: 0.05 }}
-        className="relative overflow-hidden bg-white dark:bg-slate-800/90 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl transition-all duration-300 group cursor-default"
+        className="relative overflow-hidden bg-white dark:bg-slate-800/90 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:border-blue-300/80 dark:hover:border-blue-600/60 transition-all duration-300 group cursor-default"
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -55,7 +56,7 @@ export function StatCards({
               transition={{ duration: 0.4, delay: 0.15 }}
               className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight"
             >
-              {completedVisits}
+              <AnimatedCounter value={completedVisits} />
             </motion.div>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
               {t("completed_hospital_visits")}
@@ -128,7 +129,7 @@ export function StatCards({
               transition={{ duration: 0.4, delay: 0.25 }}
               className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight"
             >
-              {upcomingConsultations}
+              <AnimatedCounter value={upcomingConsultations} />
             </motion.div>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
               {t("active_daily_doses")}
@@ -173,7 +174,7 @@ export function StatCards({
         viewport={{ once: false, amount: 0.2 }}
         whileHover={{ y: -4, transition: { duration: 0.2 } }}
         transition={{ duration: 0.45, delay: 0.25 }}
-        className="relative overflow-hidden bg-white dark:bg-slate-800/90 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl transition-all duration-300 group cursor-default"
+        className="relative overflow-hidden bg-white dark:bg-slate-800/90 rounded-[24px] p-5 border border-slate-200/80 dark:border-slate-700/80 shadow-sm hover:shadow-xl hover:border-indigo-300/80 dark:hover:border-indigo-600/60 transition-all duration-300 group cursor-default"
       >
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
@@ -201,7 +202,7 @@ export function StatCards({
               transition={{ duration: 0.4, delay: 0.35 }}
               className="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight"
             >
-              {labAnalyses}
+              <AnimatedCounter value={labAnalyses} />
             </motion.div>
             <p className="text-xs font-medium text-slate-500 dark:text-slate-400 mt-0.5">
               {t("reports_verified_and_synced")}

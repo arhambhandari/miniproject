@@ -125,6 +125,37 @@ export function WelcomeBanner({
             <span className="text-[11px] font-semibold bg-emerald-400/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 rounded-xl">
               {t("opd_queue_active_badge")}
             </span>
+
+            {/* Health Score Mini Ring */}
+            <motion.div
+              whileHover={{ scale: 1.05 }}
+              className="flex items-center gap-2 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 text-xs text-white cursor-default"
+            >
+              <div className="relative size-4 flex items-center justify-center">
+                <svg className="size-full -rotate-90" viewBox="0 0 36 36">
+                  <path
+                    className="text-white/25"
+                    strokeWidth="4"
+                    stroke="currentColor"
+                    fill="none"
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                  <motion.path
+                    className="text-emerald-300"
+                    strokeWidth="4"
+                    strokeDasharray="94, 100"
+                    strokeLinecap="round"
+                    stroke="currentColor"
+                    fill="none"
+                    initial={{ pathLength: 0 }}
+                    animate={{ pathLength: 1 }}
+                    transition={{ duration: 1.5, ease: "easeOut" }}
+                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  />
+                </svg>
+              </div>
+              <span className="font-bold text-[11px]">94% Health Score</span>
+            </motion.div>
           </div>
         </motion.div>
 
@@ -231,6 +262,27 @@ export function WelcomeBanner({
             </svg>
           </motion.div>
         </motion.div>
+      </div>
+
+      {/* Animated Medical ECG Heartbeat Pulse Line along bottom edge */}
+      <div className="absolute bottom-0 left-0 right-0 h-4 overflow-hidden pointer-events-none opacity-35">
+        <svg
+          className="w-full h-full text-blue-100"
+          viewBox="0 0 600 20"
+          preserveAspectRatio="none"
+          fill="none"
+        >
+          <motion.path
+            d="M0 10 L120 10 L130 3 L140 18 L150 2 L160 14 L170 10 L350 10 L360 3 L370 18 L380 2 L390 14 L400 10 L600 10"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            initial={{ pathOffset: 0 }}
+            animate={{ pathOffset: -1 }}
+            transition={{ repeat: Infinity, duration: 9, ease: "linear" }}
+            strokeDasharray="120 25"
+          />
+        </svg>
       </div>
     </motion.div>
   );

@@ -347,8 +347,14 @@ export function PlansCard({ onAddPlan }: PlansCardProps) {
                   whileInView={{ width: `${plan.percent}%` }}
                   viewport={{ once: false }}
                   transition={{ duration: 0.85, ease: "easeOut" }}
-                  className={`h-full ${plan.barColor} rounded-full`}
-                />
+                  className={`h-full ${plan.barColor} rounded-full relative overflow-hidden`}
+                >
+                  <motion.div
+                    animate={{ x: ["-100%", "200%"] }}
+                    transition={{ repeat: Infinity, duration: 2.2, ease: "easeInOut" }}
+                    className="absolute inset-0 bg-gradient-to-r from-transparent via-white/30 to-transparent w-full"
+                  />
+                </motion.div>
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-400 pt-0.5">
