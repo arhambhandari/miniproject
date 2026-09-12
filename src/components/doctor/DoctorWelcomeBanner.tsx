@@ -75,7 +75,7 @@ export function DoctorWelcomeBanner({
             className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/15 backdrop-blur-md text-xs font-semibold text-white/90 border border-white/20 shadow-sm cursor-default"
           >
             <Calendar className="size-3.5 text-blue-200" />
-            <span>{currentDateTime || "Today • Clinic Session Active"}</span>
+            <span suppressHydrationWarning>{currentDateTime || "Today • Clinic Session Active"}</span>
           </motion.div>
 
           <div>

@@ -161,7 +161,7 @@ export function RightPanel({
             {language === "hi" ? "मेरा कैलेंडर" : "My Calendar"}
           </span>
           <div className="flex items-center gap-1.5">
-            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 mr-1">
+            <span className="text-xs font-bold text-slate-700 dark:text-slate-200 mr-1" suppressHydrationWarning>
               {monthYearLabel}
             </span>
             <motion.button
@@ -239,7 +239,7 @@ export function RightPanel({
         className="bg-white dark:bg-slate-800/90 rounded-[24px] p-4 border border-slate-200/80 dark:border-slate-700/80 shadow-sm"
       >
         <div className="flex items-center justify-between mb-2.5">
-          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400">
+          <span className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-400" suppressHydrationWarning>
             {language === "hi" ? "शेड्यूल" : "Schedule"} • {scheduleDateHeader}
           </span>
           <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">

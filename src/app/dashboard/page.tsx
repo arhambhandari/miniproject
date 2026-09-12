@@ -43,82 +43,70 @@ import { MOCK_DOCTORS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageContext";
 import type { Appointment, Doctor } from "@/types";
 
-// Initial default appointments matching landing page doctors with dynamic dates
-const getInitialAppointments = (): Appointment[] => {
-  const formatDate = (daysOffset: number) => {
-    const d = new Date();
-    d.setDate(d.getDate() + daysOffset);
-    return d.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
-
-  return [
-    {
-      id: "app_1",
-      patientName: "Rahul Sharma",
-      doctorId: "doc_1",
-      doctorName: "Dr. Aarav Mehta",
-      specialty: "Neuro-Oncology",
-      date: formatDate(0), // Today
-      time: "10:00 AM",
-      status: "Upcoming",
-      fee: "₹2,000",
-      hospitalName: "AIIMS Super Specialty Hospital, New Delhi",
-      roomNumber: "OPD Chamber 304",
-      tokenNumber: "Token #A-08",
-    },
-    {
-      id: "app_2",
-      patientName: "Rahul Sharma",
-      doctorId: "doc_2",
-      doctorName: "Dr. Vikramaditya Rathore",
-      specialty: "Surgical Oncology",
-      date: formatDate(-3), // 3 days ago
-      time: "02:30 PM",
-      status: "Completed",
-      fee: "₹2,500",
-      hospitalName: "Tata Memorial Centre, Mumbai",
-      roomNumber: "OPD Room 112",
-      tokenNumber: "Token #B-14",
-    },
-    {
-      id: "app_3",
-      patientName: "Rahul Sharma",
-      doctorId: "doc_6",
-      doctorName: "Dr. Rohan Banerjee",
-      specialty: "Pediatric Care",
-      date: formatDate(2), // 2 days from now
-      time: "09:30 AM",
-      status: "Upcoming",
-      fee: "₹1,500",
-      hospitalName: "Medanta – The Medicity, Gurugram",
-      roomNumber: "Pediatric Wing Room 205",
-      tokenNumber: "Token #C-05",
-    },
-    {
-      id: "app_4",
-      patientName: "Rahul Sharma",
-      doctorId: "doc_4",
-      doctorName: "Dr. Rajesh Iyer",
-      specialty: "Cardiology",
-      date: formatDate(-3), // 3 days ago
-      time: "11:00 AM",
-      status: "Completed",
-      fee: "₹2,200",
-      hospitalName: "Fortis Escorts Heart Institute, New Delhi",
-      roomNumber: "Cardiology Suite 201",
-      tokenNumber: "Token #D-02",
-    },
-  ];
-};
+// Initial default appointments matching landing page doctors with deterministic dates for SSR
+const INITIAL_APPOINTMENTS: Appointment[] = [
+  {
+    id: "app_1",
+    patientName: "Rahul Sharma",
+    doctorId: "doc_1",
+    doctorName: "Dr. Aarav Mehta",
+    specialty: "Neuro-Oncology",
+    date: "Today",
+    time: "10:00 AM",
+    status: "Upcoming",
+    fee: "₹2,000",
+    hospitalName: "AIIMS Super Specialty Hospital, New Delhi",
+    roomNumber: "OPD Chamber 304",
+    tokenNumber: "Token #A-08",
+  },
+  {
+    id: "app_2",
+    patientName: "Rahul Sharma",
+    doctorId: "doc_2",
+    doctorName: "Dr. Vikramaditya Rathore",
+    specialty: "Surgical Oncology",
+    date: "Sep 9, 2026",
+    time: "02:30 PM",
+    status: "Completed",
+    fee: "₹2,500",
+    hospitalName: "Tata Memorial Centre, Mumbai",
+    roomNumber: "OPD Room 112",
+    tokenNumber: "Token #B-14",
+  },
+  {
+    id: "app_3",
+    patientName: "Rahul Sharma",
+    doctorId: "doc_6",
+    doctorName: "Dr. Rohan Banerjee",
+    specialty: "Pediatric Care",
+    date: "Sep 14, 2026",
+    time: "09:30 AM",
+    status: "Upcoming",
+    fee: "₹1,500",
+    hospitalName: "Medanta – The Medicity, Gurugram",
+    roomNumber: "Pediatric Wing Room 205",
+    tokenNumber: "Token #C-05",
+  },
+  {
+    id: "app_4",
+    patientName: "Rahul Sharma",
+    doctorId: "doc_4",
+    doctorName: "Dr. Rajesh Iyer",
+    specialty: "Cardiology",
+    date: "Sep 9, 2026",
+    time: "11:00 AM",
+    status: "Completed",
+    fee: "₹2,200",
+    hospitalName: "Fortis Escorts Heart Institute, New Delhi",
+    roomNumber: "Cardiology Suite 201",
+    tokenNumber: "Token #D-02",
+  },
+];
 
 export default function DashboardPage() {
   const router = useRouter();
   const { language, t } = useLanguage();
-  const [appointments, setAppointments] = useState<Appointment[]>(getInitialAppointments);
+  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
@@ -462,7 +450,7 @@ export default function DashboardPage() {
                                   </span>
                                 </p>
                                 <div className="flex items-center gap-2 mt-2 text-xs text-slate-600 dark:text-slate-400 font-medium flex-wrap">
-                                  <span className="flex items-center gap-1">
+                                  <span className="flex items-center gap-1" suppressHydrationWarning>
                                     <Calendar className="size-3.5 text-slate-400" />
                                     {app.date}
                                   </span>
@@ -728,7 +716,7 @@ export default function DashboardPage() {
                             {app.specialty} • <span className="font-semibold text-slate-700 dark:text-slate-300">{app.hospitalName || "Apollo Specialty Hospital"}</span>
                           </p>
                           <div className="flex items-center gap-2 mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium flex-wrap">
-                            <span className="flex items-center gap-1">
+                            <span className="flex items-center gap-1" suppressHydrationWarning>
                               <Calendar className="size-3.5 text-slate-400" /> {app.date} at {app.time}
                             </span>
                             <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md font-semibold text-[11px]">
