@@ -49,13 +49,22 @@ export async function POST(req: Request) {
         updatedState = queueManager.resolveEmergencyDelay();
         break;
 
+      case "INSERT_EMERGENCY":
+        const emRes = queueManager.insertEmergencyToken(
+          body.patientName || "Emergency Patient",
+          body.patientId,
+          body.delayReason || "Acute Onset Emergency"
+        );
+        updatedState = emRes.queueState;
+        break;
+
       case "RESET":
         updatedState = queueManager.resetQueue();
         break;
 
       default:
         return NextResponse.json({ error: "Invalid queue action" }, { status: 400 });
-    }
+      }
 
     return NextResponse.json({
       success: true,

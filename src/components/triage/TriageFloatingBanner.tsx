@@ -1,14 +1,15 @@
 "use client";
 
 import React from "react";
-import { Sparkles, ArrowRight, Stethoscope, HeartPulse } from "lucide-react";
+import { Sparkles, ArrowRight, Stethoscope, HeartPulse, Siren } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface TriageFloatingBannerProps {
   onOpenTriage: () => void;
+  onOpenEmergency?: () => void;
 }
 
-export function TriageFloatingBanner({ onOpenTriage }: TriageFloatingBannerProps) {
+export function TriageFloatingBanner({ onOpenTriage, onOpenEmergency }: TriageFloatingBannerProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -44,7 +45,20 @@ export function TriageFloatingBanner({ onOpenTriage }: TriageFloatingBannerProps
           </div>
         </div>
 
-        <div className="shrink-0">
+        <div className="shrink-0 flex flex-col sm:flex-row items-center gap-2.5">
+          {onOpenEmergency && (
+            <motion.button
+              data-testid="open-emergency-modal-btn"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onOpenEmergency}
+              className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-rose-50 dark:bg-rose-950/50 hover:bg-rose-100 dark:hover:bg-rose-900/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900/60 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+            >
+              <Siren className="size-4 text-rose-600 dark:text-rose-400 animate-pulse" />
+              <span>Emergency SOS</span>
+            </motion.button>
+          )}
+
           <motion.button
             data-testid="open-triage-modal-btn"
             whileHover={{ scale: 1.03 }}

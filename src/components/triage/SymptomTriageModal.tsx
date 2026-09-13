@@ -18,7 +18,8 @@ import {
   Star, 
   HelpCircle,
   Loader2,
-  Check
+  Check,
+  Siren
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
@@ -29,12 +30,14 @@ interface SymptomTriageModalProps {
   isOpen: boolean;
   onClose: () => void;
   onBookDoctor: (doctor: Doctor, triageSummary: string) => void;
+  onBookEmergency?: (triageSummary: string) => void;
 }
 
 export function SymptomTriageModal({
   isOpen,
   onClose,
   onBookDoctor,
+  onBookEmergency,
 }: SymptomTriageModalProps) {
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -424,16 +427,33 @@ export function SymptomTriageModal({
             >
               {/* Emergency Banner if applicable */}
               {triageResult.emergencyWarning && (
-                <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 flex items-start gap-3 text-xs text-rose-900 dark:text-rose-200">
-                  <AlertTriangle className="size-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5 animate-bounce" />
-                  <div>
-                    <strong className="block text-rose-700 dark:text-rose-300 font-extrabold text-sm mb-0.5">
-                      Emergency Clinical Warning
-                    </strong>
-                    <span className="text-rose-800 dark:text-rose-200 font-medium leading-relaxed">
-                      {triageResult.emergencyWarning}
-                    </span>
+                <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-900 dark:text-rose-200">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="size-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5 animate-bounce" />
+                    <div>
+                      <strong className="block text-rose-700 dark:text-rose-300 font-extrabold text-sm mb-0.5">
+                        Emergency Clinical Warning
+                      </strong>
+                      <span className="text-rose-800 dark:text-rose-200 font-medium leading-relaxed">
+                        {triageResult.emergencyWarning}
+                      </span>
+                    </div>
                   </div>
+
+                  {onBookEmergency && (
+                    <button
+                      data-testid="triage-emergency-booking-btn"
+                      onClick={() => {
+                        onBookEmergency(getTriageSummaryText());
+                        onClose();
+                      }}
+                      className="shrink-0 px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs flex items-center justify-center gap-1.5 shadow-md shadow-rose-600/30 cursor-pointer transition-colors"
+                    >
+                      <Siren className="size-3.5 animate-pulse" />
+                      <span>Book Emergency Priority Token</span>
+                      <ArrowRight className="size-3" />
+                    </button>
+                  )}
                 </div>
               )}
 

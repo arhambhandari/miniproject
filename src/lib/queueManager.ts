@@ -155,6 +155,43 @@ class OPDQueueManager {
     return this.getQueueState();
   }
 
+  public insertEmergencyToken(
+    patientName: string,
+    patientId?: string,
+    reason?: string
+  ): { queueState: QueueState; tokenNumber: string } {
+    const existingEmergencyCount = this.state.tokens.filter((t) =>
+      t.tokenNumber.startsWith("Token #EM-")
+    ).length;
+    const tokenNumber = `Token #EM-${String(existingEmergencyCount + 1).padStart(2, "0")}`;
+
+    const newEmergencyToken: QueueTokenItem = {
+      tokenNumber,
+      patientName,
+      time: "Immediate",
+      status: "WAITING",
+      patientId: patientId || "emergency_patient",
+    };
+
+    const servingIdx = this.state.tokens.findIndex(
+      (t) => t.tokenNumber === this.state.currentServingToken
+    );
+
+    if (servingIdx !== -1) {
+      this.state.tokens.splice(servingIdx + 1, 0, newEmergencyToken);
+    } else {
+      this.state.tokens.unshift(newEmergencyToken);
+    }
+
+    this.state.announcement = `🚨 Priority Emergency Fast-Track: ${tokenNumber} (${patientName}) queued for immediate consultation.`;
+    this.notify();
+
+    return {
+      queueState: this.getQueueState(),
+      tokenNumber,
+    };
+  }
+
   public resetQueue(): QueueState {
     this.state = {
       ...INITIAL_QUEUE_STATE,
@@ -170,6 +207,13 @@ class OPDQueueManager {
 const globalForQueue = globalThis as unknown as {
   medibookQueueManager?: OPDQueueManager;
 };
+
+if (
+  globalForQueue.medibookQueueManager &&
+  typeof (globalForQueue.medibookQueueManager as any).insertEmergencyToken !== "function"
+) {
+  globalForQueue.medibookQueueManager = new OPDQueueManager();
+}
 
 export const queueManager =
   globalForQueue.medibookQueueManager ?? new OPDQueueManager();

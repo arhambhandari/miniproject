@@ -32,6 +32,7 @@ import { DigitalOPDPassModal } from "@/components/dashboard/DigitalOPDPassModal"
 import { PlansCard } from "@/components/dashboard/PlansCard";
 import { RightPanel } from "@/components/dashboard/RightPanel";
 import { BookingModal } from "@/components/home/BookingModal";
+import { EmergencyBookingModal } from "@/components/home/EmergencyBookingModal";
 import { WriteReviewModal } from "@/components/dashboard/WriteReviewModal";
 import { MedicalRecordsView } from "@/components/dashboard/MedicalRecordsView";
 import { ConsultationsView } from "@/components/dashboard/ConsultationsView";
@@ -124,6 +125,8 @@ export default function DashboardPage() {
   const [bookingInitialDate, setBookingInitialDate] = useState<string | undefined>(undefined);
   const [bookingInitialDisease, setBookingInitialDisease] = useState<string | undefined>(undefined);
   const [triageModalOpen, setTriageModalOpen] = useState(false);
+  const [emergencyModalOpen, setEmergencyModalOpen] = useState(false);
+  const [emergencyInitialReason, setEmergencyInitialReason] = useState<string | undefined>(undefined);
 
   // Digital OPD Pass modal state
   const [selectedPassAppointment, setSelectedPassAppointment] = useState<Appointment | null>(null);
@@ -340,6 +343,10 @@ export default function DashboardPage() {
                   {/* 2. AI Clinical Symptom Pre-Triage Banner */}
                   <TriageFloatingBanner
                     onOpenTriage={() => setTriageModalOpen(true)}
+                    onOpenEmergency={() => {
+                      setEmergencyInitialReason("Acute Emergency Consultation");
+                      setEmergencyModalOpen(true);
+                    }}
                   />
 
                   {/* 3. Live Hospital OPD Queue Tracker */}
@@ -831,6 +838,31 @@ export default function DashboardPage() {
         onBookDoctor={(doc, triageSummary) => {
           setSelectedDoctor(doc);
           setBookingInitialDisease(triageSummary);
+        }}
+        onBookEmergency={(triageSummary) => {
+          setEmergencyInitialReason(triageSummary);
+          setEmergencyModalOpen(true);
+        }}
+      />
+
+      {/* Hospital Emergency Fast-Track Booking Modal */}
+      <EmergencyBookingModal
+        isOpen={emergencyModalOpen}
+        onClose={() => {
+          setEmergencyModalOpen(false);
+          setEmergencyInitialReason(undefined);
+        }}
+        doctor={selectedDoctor || MOCK_DOCTORS[0]}
+        initialReason={emergencyInitialReason}
+        onBookingSuccess={() => {
+          fetch("/api/appointments")
+            .then((res) => res.json())
+            .then((data) => {
+              if (data?.appointments) {
+                setAppointments(data.appointments);
+              }
+            })
+            .catch(() => {});
         }}
       />
 

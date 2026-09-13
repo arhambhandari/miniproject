@@ -128,6 +128,9 @@ export function DoctorOPDQueueConsole() {
   const waitingTokens = queueState?.tokens.filter((t) => t.status === "WAITING") || [];
   const nextToken = waitingTokens[0];
   const isEmergency = queueState?.status === "EMERGENCY_DELAY";
+  const emergencyWaitingToken = queueState?.tokens.find(
+    (t) => t.tokenNumber.startsWith("Token #EM-") && t.status === "WAITING"
+  );
 
   return (
     <motion.div
@@ -201,6 +204,33 @@ export function DoctorOPDQueueConsole() {
           </button>
         </div>
       </div>
+
+      {/* Emergency Fast-Track Patient Alert Banner */}
+      {emergencyWaitingToken && (
+        <motion.div
+          data-testid="doctor-emergency-alert-banner"
+          initial={{ opacity: 0, y: -5 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative z-10 mt-3 p-3.5 rounded-xl bg-rose-500/25 border border-rose-500/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-200"
+        >
+          <div className="flex items-center gap-2.5">
+            <ShieldAlert className="size-5 text-rose-400 animate-pulse shrink-0" />
+            <div>
+              <strong className="block text-rose-300 font-extrabold text-sm">
+                🚨 Emergency Fast-Track Patient Waiting: {emergencyWaitingToken.patientName} ({emergencyWaitingToken.tokenNumber})
+              </strong>
+              <span>Priority patient inserted at head of queue. Requires immediate clinical attention.</span>
+            </div>
+          </div>
+          <button
+            data-testid="doctor-call-emergency-btn"
+            onClick={() => executeAction("CALL_DIRECT", emergencyWaitingToken.tokenNumber)}
+            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shrink-0 flex items-center gap-1 shadow-md shadow-rose-600/30 cursor-pointer"
+          >
+            <span>Call Emergency Now</span>
+          </button>
+        </motion.div>
+      )}
 
       {/* Emergency Notice if active */}
       {isEmergency && (
@@ -334,6 +364,7 @@ export function DoctorOPDQueueConsole() {
           {queueState?.tokens.map((token) => {
             const isCurrent = token.tokenNumber === currentServing;
             const isCompleted = token.status === "COMPLETED";
+            const isEmergencyToken = token.tokenNumber.startsWith("Token #EM-");
             const isRahul = token.tokenNumber === "Token #A-08";
 
             return (
@@ -350,6 +381,8 @@ export function DoctorOPDQueueConsole() {
                     ? "bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-400/50"
                     : isCompleted
                     ? "bg-slate-800 text-slate-500 line-through opacity-70 cursor-not-allowed"
+                    : isEmergencyToken
+                    ? "bg-rose-500/30 text-rose-300 border-2 border-rose-500 animate-pulse hover:bg-rose-500/50 shadow-md shadow-rose-500/20"
                     : isRahul
                     ? "bg-purple-500/25 text-purple-200 border border-purple-500/40 hover:bg-purple-500/40"
                     : "bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700"

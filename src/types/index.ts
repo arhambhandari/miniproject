@@ -75,12 +75,14 @@ export type QueueState = {
   announcement?: string;
 };
 
-export type QueueActionType = "CALL_NEXT" | "CALL_DIRECT" | "EMERGENCY_DELAY" | "RESOLVE_DELAY" | "RESET";
+export type QueueActionType = "CALL_NEXT" | "CALL_DIRECT" | "EMERGENCY_DELAY" | "RESOLVE_DELAY" | "RESET" | "INSERT_EMERGENCY";
 
 export type QueueActionPayload = {
   action: QueueActionType;
   doctorId?: string;
   tokenNumber?: string;
+  patientName?: string;
+  patientId?: string;
   delayMinutes?: number;
   delayReason?: string;
 };

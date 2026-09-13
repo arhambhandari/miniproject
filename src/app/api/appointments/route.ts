@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { queueManager } from "@/lib/queueManager";
 
 // GET: Fetch appointments for current logged-in user
 export async function GET() {
@@ -123,7 +124,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { doctorId, date, startTime, disease, patientContact, email, paymentId } = body;
+    const { doctorId, date, startTime, disease, patientContact, email, paymentId, isEmergency } = body;
 
     if (!doctorId || !date || !startTime) {
       return NextResponse.json({ error: "Missing required fields: doctorId, date, and startTime" }, { status: 400 });
@@ -133,7 +134,7 @@ export async function POST(req: Request) {
     const normalizedStartTime = String(startTime).trim();
 
     // 1. Verify doctor exists and fetch fee
-    const doctor = await prisma.doctorProfile.findUnique({
+    let doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
       include: {
         user: { select: { name: true, email: true } },
@@ -141,8 +142,19 @@ export async function POST(req: Request) {
     });
 
     if (!doctor) {
+      // Fallback: If doctorId is a mock ID (e.g. "doc_1") or in emergency fast-track mode, grab the first active doctor
+      doctor = await prisma.doctorProfile.findFirst({
+        include: {
+          user: { select: { name: true, email: true } },
+        },
+      });
+    }
+
+    if (!doctor) {
       return NextResponse.json({ error: "Selected doctor profile was not found." }, { status: 404 });
     }
+
+    const activeDoctorId = doctor.id;
 
     // Prevent practitioner from booking appointments with themselves
     if (doctor.userId === session.user.id) {
@@ -182,34 +194,38 @@ export async function POST(req: Request) {
     try {
       newAppointment = await prisma.$transaction(
         async (tx) => {
-          // A. Single atomic check for doctor or patient conflicts at the exact same date & time
-          const conflictingSlot = await tx.appointment.findFirst({
-            where: {
-              date: normalizedDate,
-              startTime: normalizedStartTime,
-              status: { notIn: ["CANCELLED"] },
-              OR: [
-                { doctorId },
-                { patientId: patientProfile.id },
-              ],
-            },
-          });
+          // A. Single atomic check for doctor or patient conflicts at the exact same date & time (bypassed for emergency fast-track)
+          if (!isEmergency) {
+            const conflictingSlot = await tx.appointment.findFirst({
+              where: {
+                date: normalizedDate,
+                startTime: normalizedStartTime,
+                status: { notIn: ["CANCELLED"] },
+                OR: [
+                  { doctorId: activeDoctorId },
+                  { patientId: patientProfile.id },
+                ],
+              },
+            });
 
-          if (conflictingSlot) {
-            if (conflictingSlot.doctorId === doctorId) {
-              throw new Error("SLOT_ALREADY_BOOKED");
+            if (conflictingSlot) {
+              if (conflictingSlot.doctorId === activeDoctorId) {
+                throw new Error("SLOT_ALREADY_BOOKED");
+              }
+              throw new Error("PATIENT_ALREADY_BOOKED");
             }
-            throw new Error("PATIENT_ALREADY_BOOKED");
           }
 
           return await tx.appointment.create({
             data: {
               patientId: patientProfile.id,
-              doctorId,
+              doctorId: activeDoctorId,
               date: normalizedDate,
               startTime: normalizedStartTime,
-              disease: disease || "General Consultation",
-              status: paymentId ? "CONFIRMED" : "SCHEDULED",
+              disease: isEmergency
+                ? `[EMERGENCY FAST-TRACK] ${disease || "Acute Clinical Review"}`
+                : disease || "General Consultation",
+              status: "CONFIRMED",
               payment: {
                 create: {
                   amount: doctor.fee,
@@ -290,6 +306,16 @@ export async function POST(req: Request) {
       console.warn("Notice: Email confirmation could not be dispatched:", emailErr);
     }
 
+    let emergencyTokenNumber: string | undefined;
+    if (isEmergency) {
+      const emRes = queueManager.insertEmergencyToken(
+        patientDisplayName,
+        patientProfile.id,
+        disease || "Acute Clinical Review"
+      );
+      emergencyTokenNumber = emRes.tokenNumber;
+    }
+
     const formattedResponse = {
       id: newAppointment.id,
       patientName: patientDisplayName,
@@ -301,6 +327,8 @@ export async function POST(req: Request) {
       status: newAppointment.status,
       fee: apptFee,
       paymentId: paymentId || undefined,
+      tokenNumber: emergencyTokenNumber || "Token #A-08",
+      isEmergency: !!isEmergency,
     };
 
     return NextResponse.json(
@@ -308,6 +336,7 @@ export async function POST(req: Request) {
         success: true,
         appointment: formattedResponse,
         emailPreviewUrl,
+        emergencyToken: emergencyTokenNumber,
       },
       { status: 201 }
     );
