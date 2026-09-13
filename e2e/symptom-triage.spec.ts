@@ -17,6 +17,14 @@ test.describe('Smart Symptom Pre-Triage & Department Recommender', () => {
     const openTriageBtn = page.getByTestId('open-triage-modal-btn');
     await expect(openTriageBtn).toBeVisible({ timeout: 10000 });
 
+    // Wait for framer-motion entrance animations to settle
+    await page.waitForTimeout(1200);
+
+    // Capture screenshot of the themed banner on the patient dashboard
+    await page.screenshot({
+      path: '/Users/apple/.gemini/antigravity/brain/783b71d3-6110-4e29-a4eb-2f2899ecfde5/patient_dashboard_triage_banner_themed.png',
+    });
+
     // 3. Open the Triage Modal
     await openTriageBtn.click();
     await expect(page.getByText('AI Clinical Symptom Pre-Triage')).toBeVisible({ timeout: 8000 });
@@ -31,7 +39,7 @@ test.describe('Smart Symptom Pre-Triage & Department Recommender', () => {
     await expect(breathlessnessChip).toBeVisible();
     await breathlessnessChip.click();
 
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
     // Capture Step 1 Screenshot
     await page.screenshot({
       path: '/Users/apple/.gemini/antigravity/brain/783b71d3-6110-4e29-a4eb-2f2899ecfde5/patient_symptom_triage_step1.png',
@@ -56,7 +64,7 @@ test.describe('Smart Symptom Pre-Triage & Department Recommender', () => {
     await expect(severityBtn).toBeVisible();
     await severityBtn.click();
 
-    await page.waitForTimeout(400);
+    await page.waitForTimeout(500);
     // Capture Step 2 Screenshot
     await page.screenshot({
       path: '/Users/apple/.gemini/antigravity/brain/783b71d3-6110-4e29-a4eb-2f2899ecfde5/patient_symptom_triage_step2.png',
@@ -77,7 +85,7 @@ test.describe('Smart Symptom Pre-Triage & Department Recommender', () => {
     await expect(page.getByText(/Suggested Questions for your Doctor/i)).toBeVisible();
     await expect(page.getByText(/Available Specialists/i)).toBeVisible();
 
-    await page.waitForTimeout(500);
+    await page.waitForTimeout(600);
 
     // Capture screenshot of clinical triage result report
     await page.screenshot({
