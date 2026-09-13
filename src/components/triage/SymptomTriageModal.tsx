@@ -419,13 +419,15 @@ export function SymptomTriageModal({
             >
               {/* Emergency Banner if applicable */}
               {triageResult.emergencyWarning && (
-                <div className="p-4 rounded-2xl bg-rose-500/15 border border-rose-500/30 flex items-start gap-3 text-xs text-rose-200">
-                  <AlertTriangle className="size-5 text-rose-400 shrink-0 mt-0.5 animate-bounce" />
+                <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-900 flex items-start gap-3 text-xs text-rose-900 dark:text-rose-200">
+                  <AlertTriangle className="size-5 text-rose-600 dark:text-rose-400 shrink-0 mt-0.5 animate-bounce" />
                   <div>
-                    <strong className="block text-rose-300 font-extrabold text-sm mb-0.5">
+                    <strong className="block text-rose-700 dark:text-rose-300 font-extrabold text-sm mb-0.5">
                       Emergency Clinical Warning
                     </strong>
-                    <span>{triageResult.emergencyWarning}</span>
+                    <span className="text-rose-800 dark:text-rose-200 font-medium leading-relaxed">
+                      {triageResult.emergencyWarning}
+                    </span>
                   </div>
                 </div>
               )}
