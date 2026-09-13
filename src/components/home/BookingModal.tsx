@@ -35,16 +35,23 @@ interface BookingModalProps {
   doctor: Doctor | null;
   onClose: () => void;
   initialDate?: string;
+  initialDisease?: string;
 }
 
-export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps) {
+export function BookingModal({ doctor, onClose, initialDate, initialDisease }: BookingModalProps) {
   const [bookingDate, setBookingDate] = useState("");
   const [bookingTime, setBookingTime] = useState("10:30 AM");
   const [patientName, setPatientName] = useState("");
   const [patientContact, setPatientContact] = useState("+91 98765 43210");
   const [patientEmail, setPatientEmail] = useState("");
-  const [disease, setDisease] = useState("General Health Consultation");
+  const [disease, setDisease] = useState(initialDisease || "General Health Consultation");
   const [showCustomDate, setShowCustomDate] = useState(false);
+
+  useEffect(() => {
+    if (initialDisease) {
+      setDisease(initialDisease);
+    }
+  }, [initialDisease]);
 
   // Payment method selection & options (UPI or Card)
   const [paymentMethod, setPaymentMethod] = useState<"upi" | "card">("upi");
@@ -616,6 +623,7 @@ export function BookingModal({ doctor, onClose, initialDate }: BookingModalProps
                   <div className="relative">
                     <Activity className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-400" />
                     <input
+                      data-testid="booking-reason-input"
                       required
                       placeholder="Reason for visit / symptoms"
                       value={disease}

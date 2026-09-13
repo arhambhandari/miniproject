@@ -39,6 +39,8 @@ import { NotificationsView } from "@/components/dashboard/NotificationsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
 import { SimulatorFloatingButton } from "@/components/notifications/SimulatorFloatingButton";
 import { AmbientBackgroundGlow } from "@/components/ui/AmbientBackgroundGlow";
+import { SymptomTriageModal } from "@/components/triage/SymptomTriageModal";
+import { TriageFloatingBanner } from "@/components/triage/TriageFloatingBanner";
 import { MOCK_DOCTORS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageContext";
 import type { Appointment, Doctor } from "@/types";
@@ -120,6 +122,8 @@ export default function DashboardPage() {
   // Doctor booking modal state
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
   const [bookingInitialDate, setBookingInitialDate] = useState<string | undefined>(undefined);
+  const [bookingInitialDisease, setBookingInitialDisease] = useState<string | undefined>(undefined);
+  const [triageModalOpen, setTriageModalOpen] = useState(false);
 
   // Digital OPD Pass modal state
   const [selectedPassAppointment, setSelectedPassAppointment] = useState<Appointment | null>(null);
@@ -333,7 +337,12 @@ export default function DashboardPage() {
                     upcomingCount={upcomingAppointments.length}
                   />
 
-                  {/* 2. Live Hospital OPD Queue Tracker */}
+                  {/* 2. AI Clinical Symptom Pre-Triage Banner */}
+                  <TriageFloatingBanner
+                    onOpenTriage={() => setTriageModalOpen(true)}
+                  />
+
+                  {/* 3. Live Hospital OPD Queue Tracker */}
                   <LiveOPDQueueTracker
                     upcomingAppointment={upcomingAppointments[0]}
                     onOpenPass={(app) => setSelectedPassAppointment(app)}
@@ -806,12 +815,24 @@ export default function DashboardPage() {
         <BookingModal
           doctor={selectedDoctor}
           initialDate={bookingInitialDate}
+          initialDisease={bookingInitialDisease}
           onClose={() => {
             setSelectedDoctor(null);
             setBookingInitialDate(undefined);
+            setBookingInitialDisease(undefined);
           }}
         />
       )}
+
+      {/* AI Clinical Symptom Pre-Triage Modal */}
+      <SymptomTriageModal
+        isOpen={triageModalOpen}
+        onClose={() => setTriageModalOpen(false)}
+        onBookDoctor={(doc, triageSummary) => {
+          setSelectedDoctor(doc);
+          setBookingInitialDisease(triageSummary);
+        }}
+      />
 
       {/* Digital Hospital OPD Pass Modal */}
       {selectedPassAppointment && (
