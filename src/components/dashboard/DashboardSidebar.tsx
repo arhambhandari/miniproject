@@ -12,7 +12,8 @@ import {
   Bell,
   Settings,
   LogOut,
-  Stethoscope
+  Stethoscope,
+  Bot
 } from "lucide-react";
 import { signOut } from "next-auth/react";
 import { motion } from "framer-motion";
