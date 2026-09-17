@@ -86,3 +86,30 @@ export type QueueActionPayload = {
   delayMinutes?: number;
   delayReason?: string;
 };
+
+export type ChatActionType =
+  | "BOOK_DOCTOR"
+  | "BOOK_EMERGENCY"
+  | "START_TRIAGE"
+  | "VIEW_QUEUE"
+  | "VIEW_MEDICATIONS"
+  | "VIEW_PASS";
+
+export type ChatAction = {
+  type: ChatActionType;
+  label: string;
+  doctor?: Doctor;
+  emergencyReason?: string;
+  triageDisease?: string;
+  data?: any;
+};
+
+export type ChatMessage = {
+  id: string;
+  sender: "user" | "bot";
+  text: string;
+  timestamp: string;
+  actions?: ChatAction[];
+  suggestedReplies?: string[];
+  isEmergency?: boolean;
+};
