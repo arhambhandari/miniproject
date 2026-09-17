@@ -42,6 +42,7 @@ import { SimulatorFloatingButton } from "@/components/notifications/SimulatorFlo
 import { AmbientBackgroundGlow } from "@/components/ui/AmbientBackgroundGlow";
 import { SymptomTriageModal } from "@/components/triage/SymptomTriageModal";
 import { TriageFloatingBanner } from "@/components/triage/TriageFloatingBanner";
+import { MediGuideChatbot } from "@/components/chat/MediGuideChatbot";
 import { MOCK_DOCTORS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageContext";
 import type { Appointment, Doctor } from "@/types";
@@ -127,6 +128,7 @@ export default function DashboardPage() {
   const [triageModalOpen, setTriageModalOpen] = useState(false);
   const [emergencyModalOpen, setEmergencyModalOpen] = useState(false);
   const [emergencyInitialReason, setEmergencyInitialReason] = useState<string | undefined>(undefined);
+  const [aiChatOpen, setAiChatOpen] = useState(false);
 
   // Digital OPD Pass modal state
   const [selectedPassAppointment, setSelectedPassAppointment] = useState<Appointment | null>(null);
@@ -244,6 +246,7 @@ export default function DashboardPage() {
             activeTab={activeTab}
             setActiveTab={setActiveTab}
             onOpenBooking={() => setSelectedDoctor(MOCK_DOCTORS[0])}
+            onOpenAIChat={() => setAiChatOpen(true)}
           />
         </div>
 
@@ -347,6 +350,7 @@ export default function DashboardPage() {
                       setEmergencyInitialReason("Acute Emergency Consultation");
                       setEmergencyModalOpen(true);
                     }}
+                    onOpenAIChat={() => setAiChatOpen(true)}
                   />
 
                   {/* 3. Live Hospital OPD Queue Tracker */}
@@ -884,6 +888,33 @@ export default function DashboardPage() {
           }}
         />
       )}
+
+      {/* MediGuide AI Conversational Health & Hospital Navigator */}
+      <MediGuideChatbot
+        isOpen={aiChatOpen}
+        onToggle={() => setAiChatOpen((prev) => !prev)}
+        onBookDoctor={(doc, reason) => {
+          setSelectedDoctor(doc);
+          if (reason) setBookingInitialDisease(reason);
+        }}
+        onBookEmergency={(reason) => {
+          if (reason) setEmergencyInitialReason(reason);
+          setEmergencyModalOpen(true);
+        }}
+        onOpenTriage={() => setTriageModalOpen(true)}
+        onNavigateToQueue={() => {
+          setActiveTab("overview");
+          window.scrollTo({ top: 350, behavior: "smooth" });
+        }}
+        onNavigateToMedications={() => {
+          setActiveTab("records");
+        }}
+        onOpenPass={() => {
+          if (appointments && appointments.length > 0) {
+            setSelectedPassAppointment(appointments[0]);
+          }
+        }}
+      />
 
       {/* WhatsApp & SMS Health Alert Dispatch Simulator Floating Action */}
       <SimulatorFloatingButton />

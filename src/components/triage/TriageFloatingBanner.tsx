@@ -1,15 +1,16 @@
 "use client";
 
 import React from "react";
-import { Sparkles, ArrowRight, Stethoscope, HeartPulse, Siren } from "lucide-react";
+import { Sparkles, ArrowRight, Stethoscope, HeartPulse, Siren, Bot } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface TriageFloatingBannerProps {
   onOpenTriage: () => void;
   onOpenEmergency?: () => void;
+  onOpenAIChat?: () => void;
 }
 
-export function TriageFloatingBanner({ onOpenTriage, onOpenEmergency }: TriageFloatingBannerProps) {
+export function TriageFloatingBanner({ onOpenTriage, onOpenEmergency, onOpenAIChat }: TriageFloatingBannerProps) {
   return (
     <motion.div
       initial={{ opacity: 0, y: 15 }}
@@ -46,6 +47,19 @@ export function TriageFloatingBanner({ onOpenTriage, onOpenEmergency }: TriageFl
         </div>
 
         <div className="shrink-0 flex flex-col sm:flex-row items-center gap-2.5">
+          {onOpenAIChat && (
+            <motion.button
+              data-testid="banner-ai-chat-btn"
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={onOpenAIChat}
+              className="w-full sm:w-auto px-4 py-3 rounded-2xl bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-900/60 font-bold text-xs flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-xs"
+            >
+              <Bot className="size-4 text-indigo-600 dark:text-indigo-400" />
+              <span>Ask AI Guide</span>
+            </motion.button>
+          )}
+
           {onOpenEmergency && (
             <motion.button
               data-testid="open-emergency-modal-btn"

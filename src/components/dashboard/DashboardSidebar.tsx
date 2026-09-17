@@ -22,12 +22,14 @@ interface DashboardSidebarProps {
   activeTab: string;
   setActiveTab: (tab: string) => void;
   onOpenBooking?: () => void;
+  onOpenAIChat?: () => void;
 }
 
 export function DashboardSidebar({
   activeTab,
   setActiveTab,
   onOpenBooking,
+  onOpenAIChat,
 }: DashboardSidebarProps) {
   const { t } = useLanguage();
 
@@ -89,6 +91,21 @@ export function DashboardSidebar({
             </motion.button>
           );
         })}
+
+        {/* MediGuide AI Quick Action */}
+        <motion.button
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          onClick={() => {
+            if (onOpenAIChat) onOpenAIChat();
+          }}
+          title="MediGuide AI Assistant"
+          data-testid="sidebar-ai-chat-btn"
+          className="size-11 sm:size-12 rounded-2xl bg-indigo-500/40 hover:bg-white text-white hover:text-indigo-600 flex items-center justify-center transition-colors cursor-pointer mt-1 group border border-white/20 relative"
+        >
+          <Bot className="size-5 transition-transform group-hover:scale-110" />
+          <span className="absolute -top-1 -right-1 size-2.5 rounded-full bg-emerald-400 border-2 border-blue-600" />
+        </motion.button>
 
         {/* Quick Book Appointment Action */}
         <motion.button
