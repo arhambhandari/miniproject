@@ -57,10 +57,10 @@ const INITIAL_BOT_MESSAGE: ChatMessage = {
     },
   ],
   suggestedReplies: [
+    "What are the symptoms of cancer?",
+    "What are the symptoms of diabetes?",
     "Which specialist should I see?",
     "How does the Live OPD Queue work?",
-    "I have chest pain & breathlessness",
-    "Where is my digital OPD pass?",
   ],
 };
 
@@ -286,10 +286,44 @@ export function MediGuideChatbot({
                       </div>
                     )}
 
-                    {/* Message Text with basic markdown bullet/bold rendering */}
-                    <div className="space-y-2 leading-relaxed whitespace-pre-line">
-                      {msg.text}
-                    </div>
+                    {/* Message Text with rich formatting */}
+                    {msg.sender === "user" ? (
+                      <div className="leading-relaxed whitespace-pre-line text-xs font-medium">
+                        {msg.text}
+                      </div>
+                    ) : (
+                      <div className="space-y-1.5 leading-relaxed text-xs">
+                        {msg.text.split("\n").map((line, lIdx) => {
+                          const trimmed = line.trim();
+                          if (!trimmed) return <div key={lIdx} className="h-1" />;
+                          
+                          if (trimmed === "---") {
+                            return <hr key={lIdx} className="my-2 border-slate-200 dark:border-slate-700" />;
+                          }
+
+                          const isBullet = trimmed.startsWith("•") || trimmed.startsWith("- ") || /^\d+\.\s/.test(trimmed);
+                          const parts = line.split(/(\*\*.*?\*\*)/g);
+
+                          return (
+                            <div
+                              key={lIdx}
+                              className={isBullet ? "pl-2.5 -indent-2 text-slate-700 dark:text-slate-200" : "text-slate-800 dark:text-slate-200"}
+                            >
+                              {parts.map((p, pIdx) => {
+                                if (p.startsWith("**") && p.endsWith("**") && p.length > 4) {
+                                  return (
+                                    <strong key={pIdx} className="font-extrabold text-slate-900 dark:text-white">
+                                      {p.slice(2, -2)}
+                                    </strong>
+                                  );
+                                }
+                                return <span key={pIdx}>{p}</span>;
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
 
                     <div
                       className={`text-[9px] mt-2 font-semibold ${

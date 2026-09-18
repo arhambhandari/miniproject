@@ -88,5 +88,20 @@ export const MOCK_DOCTORS = [
       name: "Dr. Rohan Banerjee",
       image: "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400"
     }
+  },
+  {
+    id: "cmu72gphx0003k4s1a52x8twq",
+    specialization: "ONCOLOGY",
+    qualifications: "MBBS, MD (Oncology)",
+    experience: 5,
+    hospitalName: "Apollo Specialty Hospital",
+    contactNumber: "+91 98204 77123",
+    satisfaction: 99,
+    nextAvailable: "OCT 12",
+    fee: 1500,
+    user: {
+      name: "Dr. Meenakshi Mohanish Das",
+      image: "/images/doctors/dr-meenakshi-mohanish-das.jpg"
+    }
   }
 ];

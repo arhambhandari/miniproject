@@ -121,4 +121,61 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
     await sidebarAiBtn.click();
     await expect(chatWindow).toBeVisible();
   });
+
+  test('Patient asks MediGuide AI about symptoms of cancer and receives clinical educational explanation and specialist option', async ({ page }) => {
+    // 1. Clear session and log in as patient
+    await page.context().clearCookies();
+    await page.goto('/login');
+    await page.waitForLoadState('networkidle');
+    await page.fill('input[type="email"]', 'patient@example.com');
+    await page.fill('input[type="password"]', 'Patient123!');
+    await Promise.all([
+      page.waitForURL(/.*dashboard/, { timeout: 30000 }),
+      page.click('button[type="submit"]'),
+    ]);
+
+    // 2. Open MediGuide Chat Window
+    const openChatBtn = page.getByTestId('open-ai-chat-btn');
+    await expect(openChatBtn).toBeVisible({ timeout: 10000 });
+    await openChatBtn.click({ force: true });
+    const chatWindow = page.getByTestId('ai-chat-window');
+    await expect(chatWindow).toBeVisible({ timeout: 8000 });
+
+    // 3. Ask "What are the symptom of cancer" (the exact user query from screenshot)
+    const chatInput = page.getByTestId('ai-chat-input');
+    const sendBtn = page.getByTestId('ai-chat-send-btn');
+    await chatInput.fill('What are the symptom of cancer');
+    await sendBtn.click();
+
+    // 4. Verify that it explains the symptoms of cancer rather than only recommending a doctor
+    await expect(page.getByText(/Common Symptoms & Warning Signs of Cancer/i)).toBeVisible({ timeout: 12000 });
+    await expect(page.getByText(/Unexplained Weight Loss/i)).toBeVisible();
+    await expect(page.getByText(/Persistent Fatigue & Exhaustion/i)).toBeVisible();
+    await expect(page.getByText(/Lumps, Thickening, or Palpable Masses/i)).toBeVisible();
+    await expect(page.getByText(/Clinical Reassurance & Screening Guidance/i)).toBeVisible();
+
+    // Verify it did NOT say "Based on your symptoms ("What are the symptom of cancer")"
+    await expect(page.getByText(/Based on your symptoms \("What are the symptom of cancer"\)/i)).not.toBeVisible();
+
+    // Verify oncology specialist booking card is provided as an option
+    const bookOncolBtn = page.getByTestId('chat-action-book-doctor-btn').last();
+    await expect(bookOncolBtn).toBeVisible();
+
+    // Capture screenshot of cancer symptoms response
+    await page.screenshot({
+      path: '/Users/apple/.gemini/antigravity/brain/783b71d3-6110-4e29-a4eb-2f2899ecfde5/patient_ai_guide_cancer_symptoms.png',
+    });
+
+    // 5. Click the book consultation button to verify the booking modal opens
+    await bookOncolBtn.click();
+    await expect(page.getByText(/Schedule Consultation/i)).toBeVisible({ timeout: 8000 });
+
+    // Close booking modal
+    const closeBookingBtn = page.getByRole('button', { name: 'Close modal' });
+    if (await closeBookingBtn.isVisible()) {
+      await closeBookingBtn.click();
+    } else {
+      await page.keyboard.press('Escape');
+    }
+  });
 });
