@@ -18,7 +18,7 @@ export function SimulatorFloatingButton({
 
   return (
     <>
-      <div className="fixed bottom-6 right-6 z-40">
+      <div className="fixed bottom-22 right-6 z-30">
         <motion.button
           whileHover={{ scale: 1.08, y: -2 }}
           whileTap={{ scale: 0.94 }}

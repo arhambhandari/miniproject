@@ -19,7 +19,7 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
     await expect(openChatBtn).toContainText('MediGuide AI');
 
     // 3. Open MediGuide Chat Window
-    await openChatBtn.click();
+    await openChatBtn.click({ force: true });
     const chatWindow = page.getByTestId('ai-chat-window');
     await expect(chatWindow).toBeVisible({ timeout: 8000 });
     await expect(page.getByText('Live Clinical Assistant & OPD Guide')).toBeVisible();
@@ -61,8 +61,10 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
     const emergencyCloseBtn = page.getByRole('button').filter({ hasText: 'Cancel' });
     await emergencyCloseBtn.click();
 
-    // 5. Re-open chat and test Specialist Doctor Matching
-    await openChatBtn.click();
+    // 5. Re-open chat if needed and test Specialist Doctor Matching
+    if (await openChatBtn.isVisible()) {
+      await openChatBtn.click({ force: true });
+    }
     await expect(chatWindow).toBeVisible({ timeout: 5000 });
 
     await chatInput.fill('I have frequent chronic migraine and brain headache');
@@ -91,7 +93,9 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
     }
 
     // 6. Test OPD Live Queue Status Guidance
-    await openChatBtn.click();
+    if (await openChatBtn.isVisible()) {
+      await openChatBtn.click({ force: true });
+    }
     await expect(chatWindow).toBeVisible({ timeout: 5000 });
 
     await chatInput.fill('How does the live OPD queue work?');

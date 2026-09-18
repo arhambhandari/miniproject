@@ -29,7 +29,7 @@ export default function RootLayout({
         >
           <LanguageProvider>
             {children}
-            <Toaster position="bottom-right" richColors />
+            <Toaster position="top-right" richColors />
           </LanguageProvider>
         </ThemeProvider>
       </body>
