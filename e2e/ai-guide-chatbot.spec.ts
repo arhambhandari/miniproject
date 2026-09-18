@@ -25,7 +25,7 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
     await expect(page.getByText('Live Clinical Assistant & OPD Guide')).toBeVisible();
 
     // Verify initial welcoming message and quick suggestion chips
-    await expect(page.getByText('Hello! I am MediGuide AI')).toBeVisible();
+    await expect(page.getByText(/Hello.*MediGuide AI/i)).toBeVisible();
     await expect(page.getByTestId('suggested-reply-0')).toBeVisible();
 
     // Capture initial chat state screenshot
@@ -44,7 +44,7 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
     await expect(page.getByText(/CRITICAL CLINICAL ALERT/i)).toBeVisible();
     
     // Verify emergency action card
-    const emergencyActionBtn = page.getByTestId('chat-action-emergency-btn');
+    const emergencyActionBtn = page.getByTestId('chat-action-emergency-btn').last();
     await expect(emergencyActionBtn).toBeVisible();
 
     // Capture emergency response screenshot
@@ -55,10 +55,10 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
     // Click emergency action button to verify it launches Emergency Fast-Track Admission Modal
     await emergencyActionBtn.click();
     await expect(page.getByText('Emergency Priority Admission')).toBeVisible({ timeout: 8000 });
-    await expect(page.getByText('EMERGENCY FAST-TRACK')).toBeVisible();
+    await expect(page.getByText('EMERGENCY FAST-TRACK', { exact: true })).toBeVisible();
 
     // Close emergency modal
-    const emergencyCloseBtn = page.getByRole('button').filter({ hasText: 'Cancel' });
+    const emergencyCloseBtn = page.getByTestId('emergency-cancel-btn');
     await emergencyCloseBtn.click();
 
     // 5. Re-open chat if needed and test Specialist Doctor Matching
@@ -72,7 +72,7 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
 
     // Verify specialist recommendation
     await expect(page.getByText(/Specialist Recommendation: Neurology/i)).toBeVisible({ timeout: 12000 });
-    const bookDocActionBtn = page.getByTestId('chat-action-book-doctor-btn');
+    const bookDocActionBtn = page.getByTestId('chat-action-book-doctor-btn').last();
     await expect(bookDocActionBtn).toBeVisible();
 
     // Capture doctor matching screenshot
@@ -82,7 +82,7 @@ test.describe('MediGuide AI Conversational Health & Hospital Guide', () => {
 
     // Click book consultation action to verify it launches Doctor Booking Modal
     await bookDocActionBtn.click();
-    await expect(page.getByText(/Book Appointment/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/Schedule Consultation/i)).toBeVisible({ timeout: 8000 });
 
     // Close booking modal
     const closeBookingBtn = page.getByRole('button', { name: 'Close modal' });

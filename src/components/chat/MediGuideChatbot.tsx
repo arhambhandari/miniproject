@@ -39,7 +39,7 @@ interface MediGuideChatbotProps {
 const INITIAL_BOT_MESSAGE: ChatMessage = {
   id: "msg_init",
   sender: "bot",
-  text: "Hello! I am **MediGuide AI**, your 24/7 clinical navigator and hospital assistant.\n\nHow can I assist you today? You can describe any symptoms, ask about your doctor, check the Live OPD Queue status, or request emergency fast-track admission.",
+  text: "Hello! I am MediGuide AI, your 24/7 clinical navigator and hospital assistant.\n\nHow can I assist you today? You can describe any symptoms, ask about your doctor, check the Live OPD Queue status, or request emergency fast-track admission.",
   timestamp: "Just now",
   actions: [
     {

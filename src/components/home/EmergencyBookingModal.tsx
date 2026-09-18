@@ -313,6 +313,7 @@ export function EmergencyBookingModal({
               <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
+                  data-testid="emergency-cancel-btn"
                   onClick={onClose}
                   className="px-4 py-2.5 rounded-xl text-slate-600 dark:text-slate-400 hover:text-slate-900 text-xs font-bold cursor-pointer"
                 >

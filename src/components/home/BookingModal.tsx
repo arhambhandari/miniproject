@@ -390,6 +390,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
               </div>
               <button
                 onClick={onClose}
+                aria-label="Close modal"
                 className="size-9 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 flex items-center justify-center transition-colors cursor-pointer"
               >
                 <X className="size-4" />
