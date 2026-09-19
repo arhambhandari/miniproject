@@ -137,38 +137,38 @@ export function DoctorOPDQueueConsole() {
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
-      className="relative overflow-hidden rounded-[26px] bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 p-5 md:p-6 text-white border border-slate-700/80 shadow-xl"
+      className="relative overflow-hidden rounded-[28px] bg-white dark:bg-slate-800/90 p-5 md:p-6 text-slate-900 dark:text-white border border-slate-200/80 dark:border-slate-700/80 shadow-sm transition-all duration-300 hover:shadow-md"
     >
       {/* Background ambient light */}
-      <div className="absolute top-0 right-0 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
+      <div className="absolute top-0 right-0 w-80 h-80 bg-blue-500/5 dark:bg-blue-500/15 rounded-full blur-3xl pointer-events-none" />
 
       {/* Top Header */}
-      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-700/60">
+      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-700/80">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">
+          <div className="p-2.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 border border-blue-100 dark:border-blue-800/40">
             <Radio className="size-5 animate-pulse" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h3 className="font-extrabold text-base md:text-lg text-white">
+              <h3 className="font-extrabold text-base md:text-lg text-slate-900 dark:text-white">
                 Chamber 304 Live OPD Console
               </h3>
               <span
                 className={`flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${
                   connected
-                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30"
-                    : "bg-amber-500/20 text-amber-300 border-amber-500/30"
+                    ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800/50"
+                    : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800/50"
                 }`}
               >
                 <span
                   className={`size-1.5 rounded-full ${
-                    connected ? "bg-emerald-400 animate-ping" : "bg-amber-400"
+                    connected ? "bg-emerald-500 dark:bg-emerald-400 animate-ping" : "bg-amber-500 dark:bg-amber-400"
                   }`}
                 />
                 {connected ? "SSE Stream Live" : "Connecting..."}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-0.5">
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Apollo Specialty Hospital • Dr. Vikramaditya Rathore (Neuro-Oncology)
             </p>
           </div>
@@ -180,7 +180,7 @@ export function DoctorOPDQueueConsole() {
             <button
               onClick={() => executeAction("RESOLVE_DELAY")}
               disabled={loading}
-              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-md cursor-pointer"
             >
               <CheckCircle2 className="size-3.5" /> Resume Consultations
             </button>
@@ -188,9 +188,9 @@ export function DoctorOPDQueueConsole() {
             <button
               onClick={() => executeAction("EMERGENCY_DELAY")}
               disabled={loading}
-              className="px-3 py-1.5 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-300 border border-rose-500/30 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
+              className="px-3 py-1.5 rounded-xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-900/40 text-rose-700 dark:text-rose-300 border border-rose-200/80 dark:border-rose-800/60 font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
             >
-              <ShieldAlert className="size-3.5 text-rose-400" /> +15m Emergency
+              <ShieldAlert className="size-3.5 text-rose-500" /> +15m Emergency
             </button>
           )}
 
@@ -198,7 +198,7 @@ export function DoctorOPDQueueConsole() {
             onClick={() => executeAction("RESET")}
             disabled={loading}
             title="Reset Queue"
-            className="p-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs transition-all cursor-pointer"
+            className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-700/80 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 border border-slate-200/80 dark:border-slate-600 text-xs transition-all cursor-pointer"
           >
             <RotateCcw className="size-3.5" />
           </button>
@@ -211,21 +211,21 @@ export function DoctorOPDQueueConsole() {
           data-testid="doctor-emergency-alert-banner"
           initial={{ opacity: 0, y: -5 }}
           animate={{ opacity: 1, y: 0 }}
-          className="relative z-10 mt-3 p-3.5 rounded-xl bg-rose-500/25 border border-rose-500/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-200"
+          className="relative z-10 mt-3 p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200/80 dark:border-rose-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs text-rose-800 dark:text-rose-200 shadow-2xs"
         >
           <div className="flex items-center gap-2.5">
-            <ShieldAlert className="size-5 text-rose-400 animate-pulse shrink-0" />
+            <ShieldAlert className="size-5 text-rose-600 dark:text-rose-400 animate-pulse shrink-0" />
             <div>
-              <strong className="block text-rose-300 font-extrabold text-sm">
+              <strong className="block text-rose-800 dark:text-rose-200 font-extrabold text-sm">
                 🚨 Emergency Fast-Track Patient Waiting: {emergencyWaitingToken.patientName} ({emergencyWaitingToken.tokenNumber})
               </strong>
-              <span>Priority patient inserted at head of queue. Requires immediate clinical attention.</span>
+              <span className="text-rose-600 dark:text-rose-300">Priority patient inserted at head of queue. Requires immediate clinical attention.</span>
             </div>
           </div>
           <button
             data-testid="doctor-call-emergency-btn"
             onClick={() => executeAction("CALL_DIRECT", emergencyWaitingToken.tokenNumber)}
-            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shrink-0 flex items-center gap-1 shadow-md shadow-rose-600/30 cursor-pointer"
+            className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-black text-xs shrink-0 flex items-center gap-1 shadow-md shadow-rose-600/25 cursor-pointer transition-all"
           >
             <span>Call Emergency Now</span>
           </button>
@@ -237,9 +237,9 @@ export function DoctorOPDQueueConsole() {
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
-          className="relative z-10 mt-3 p-3 rounded-xl bg-amber-500/15 border border-amber-500/30 flex items-center gap-2.5 text-xs text-amber-200"
+          className="relative z-10 mt-3 p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/40 flex items-center gap-2.5 text-xs text-amber-800 dark:text-amber-200"
         >
-          <AlertTriangle className="size-4 text-amber-400 shrink-0" />
+          <AlertTriangle className="size-4 text-amber-500 shrink-0" />
           <span>
             <strong>Queue on 15-Minute Emergency Hold:</strong>{" "}
             {queueState?.delayReason || "Attending urgent ICU trauma case."} Patients see delayed ETA.
@@ -250,46 +250,46 @@ export function DoctorOPDQueueConsole() {
       {/* Main Console Action Grid */}
       <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-4 pt-4">
         {/* Left: Inside Chamber Card */}
-        <div className="lg:col-span-4 p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between">
+        <div className="lg:col-span-4 p-4.5 rounded-2xl bg-slate-50/80 dark:bg-slate-900/40 border border-slate-200/70 dark:border-slate-700/60 flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-slate-400 block mb-1">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 dark:text-slate-500 block mb-1">
               Currently Inside Chamber
             </span>
             <div
               data-testid="doctor-now-serving"
-              className="text-3xl font-black text-amber-400 tracking-tight"
+              className="text-3xl font-black text-amber-500 dark:text-amber-400 tracking-tight"
             >
               {currentServing}
             </div>
-            <div className="text-sm font-bold text-white mt-1 flex items-center gap-1.5">
-              <UserCheck className="size-4 text-emerald-400" /> {currentPatient}
+            <div className="text-sm font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-1.5">
+              <UserCheck className="size-4 text-emerald-600 dark:text-emerald-400" /> {currentPatient}
             </div>
-            <span className="text-[11px] text-slate-400 mt-1 block">
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 block">
               In consultation • Room 304
             </span>
           </div>
 
-          <div className="mt-3 pt-3 border-t border-white/10 flex items-center justify-between text-xs text-slate-400">
+          <div className="mt-3 pt-3 border-t border-slate-200/60 dark:border-slate-700/60 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span>Waiting in queue:</span>
-            <strong className="text-white font-bold">{waitingTokens.length} patients</strong>
+            <strong className="text-slate-900 dark:text-white font-bold">{waitingTokens.length} patients</strong>
           </div>
         </div>
 
         {/* Center: Primary "Call Next Patient" Action */}
-        <div className="lg:col-span-5 p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/25 flex flex-col justify-between">
+        <div className="lg:col-span-5 p-4.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/50 flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-indigo-300 block mb-1">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-blue-600 dark:text-blue-400 block mb-1">
               Next In Line
             </span>
             {nextToken ? (
               <div>
-                <div className="text-xl font-black text-white">
+                <div className="text-xl font-black text-slate-900 dark:text-white">
                   {nextToken.tokenNumber}{" "}
-                  <span className="text-sm font-semibold text-slate-300">
+                  <span className="text-sm font-semibold text-slate-600 dark:text-slate-300">
                     ({nextToken.patientName})
                   </span>
                 </div>
-                <span className="text-xs text-indigo-200 mt-0.5 block">
+                <span className="text-xs text-blue-700 dark:text-blue-300 mt-0.5 block">
                   Scheduled slot: {nextToken.time}
                 </span>
               </div>
@@ -307,7 +307,7 @@ export function DoctorOPDQueueConsole() {
               whileTap={{ scale: 0.98 }}
               disabled={loading || !nextToken}
               onClick={() => executeAction("CALL_NEXT")}
-              className="flex-1 py-3 px-4 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 text-slate-950 font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-500/20 disabled:opacity-50 transition-all cursor-pointer"
+              className="flex-1 py-3 px-4 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-black text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-600/25 disabled:opacity-50 transition-all cursor-pointer"
             >
               {loading ? (
                 <Loader2 className="size-4 animate-spin" />
@@ -322,15 +322,15 @@ export function DoctorOPDQueueConsole() {
         </div>
 
         {/* Right: Direct Priority Patient Call */}
-        <div className="lg:col-span-3 p-4 rounded-2xl bg-white/5 border border-white/10 flex flex-col justify-between">
+        <div className="lg:col-span-3 p-4.5 rounded-2xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200/70 dark:border-purple-800/50 flex flex-col justify-between">
           <div>
-            <span className="text-[10px] font-extrabold uppercase tracking-wider text-purple-300 block mb-1">
+            <span className="text-[11px] font-extrabold uppercase tracking-wider text-purple-600 dark:text-purple-400 block mb-1">
               Priority Patient Call
             </span>
-            <div className="text-sm font-bold text-white">
+            <div className="text-sm font-bold text-slate-900 dark:text-white">
               Rahul Sharma
             </div>
-            <div className="text-xs text-purple-300">
+            <div className="text-xs text-purple-700 dark:text-purple-300">
               Token #A-08 (UHID: MB-98412)
             </div>
           </div>
@@ -342,7 +342,7 @@ export function DoctorOPDQueueConsole() {
               whileTap={{ scale: 0.98 }}
               disabled={loading || currentServing === "Token #A-08"}
               onClick={() => executeAction("CALL_DIRECT", "Token #A-08")}
-              className="w-full py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/30 disabled:opacity-50 transition-all cursor-pointer"
+              className="w-full py-2.5 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-md shadow-purple-600/25 disabled:opacity-50 transition-all cursor-pointer"
             >
               <Sparkles className="size-3.5 text-purple-200" />
               <span>
@@ -356,8 +356,8 @@ export function DoctorOPDQueueConsole() {
       </div>
 
       {/* Live Queue Ribbon / Tokens sequence */}
-      <div className="relative z-10 mt-4 pt-3 border-t border-slate-700/60">
-        <span className="text-[11px] font-bold text-slate-400 block mb-2">
+      <div className="relative z-10 mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/80">
+        <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 block mb-2">
           Real-Time Shift Token Sequence:
         </span>
         <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
@@ -378,14 +378,14 @@ export function DoctorOPDQueueConsole() {
                 disabled={isCurrent || isCompleted || loading}
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold shrink-0 transition-all flex items-center gap-1.5 cursor-pointer ${
                   isCurrent
-                    ? "bg-amber-400 text-slate-950 shadow-md ring-2 ring-amber-400/50"
+                    ? "bg-amber-400 text-slate-950 shadow-xs ring-2 ring-amber-400/50 font-black"
                     : isCompleted
-                    ? "bg-slate-800 text-slate-500 line-through opacity-70 cursor-not-allowed"
+                    ? "bg-slate-100 dark:bg-slate-800/80 text-slate-400 dark:text-slate-500 line-through opacity-70 cursor-not-allowed"
                     : isEmergencyToken
-                    ? "bg-rose-500/30 text-rose-300 border-2 border-rose-500 animate-pulse hover:bg-rose-500/50 shadow-md shadow-rose-500/20"
+                    ? "bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-2 border-rose-500 animate-pulse hover:bg-rose-100 dark:hover:bg-rose-900/50 shadow-xs"
                     : isRahul
-                    ? "bg-purple-500/25 text-purple-200 border border-purple-500/40 hover:bg-purple-500/40"
-                    : "bg-slate-800/80 text-slate-300 border border-slate-700 hover:bg-slate-700"
+                    ? "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-700/60 hover:bg-purple-100 dark:hover:bg-purple-900/50"
+                    : "bg-slate-100 hover:bg-slate-200/70 dark:bg-slate-700/60 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200/80 dark:border-slate-600/80 shadow-2xs"
                 }`}
               >
                 <span>{token.tokenNumber}</span>
