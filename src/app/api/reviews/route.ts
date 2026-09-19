@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
+import { invalidateDoctorsCache } from "@/lib/doctors";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -239,6 +240,8 @@ export async function POST(request: Request) {
       where: { id: doctor.id },
       data: { satisfaction: satisfactionScore },
     });
+
+    invalidateDoctorsCache(doctor.id);
 
     return NextResponse.json({
       success: true,

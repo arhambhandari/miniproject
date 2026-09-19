@@ -11,24 +11,28 @@ import { motion } from "framer-motion";
 import type { Doctor } from "@/types";
 
 interface DoctorGridProps {
+  initialDoctors?: Doctor[];
   onBook: (doctor: Doctor) => void;
   searchQuery?: string;
   onClearSearch?: () => void;
 }
 
-export function DoctorGrid({ onBook, searchQuery = "", onClearSearch }: DoctorGridProps) {
+export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onClearSearch }: DoctorGridProps) {
   const { t } = useLanguage();
-  const [doctors, setDoctors] = useState<Doctor[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
+  const [loading, setLoading] = useState(initialDoctors.length === 0);
 
   useEffect(() => {
-    fetch("/api/doctors")
-      .then(res => res.json())
-      .then(data => {
-        setDoctors(Array.isArray(data) ? data : data.doctors || []);
-        setLoading(false);
-      });
-  }, []);
+    if (doctors.length === 0) {
+      fetch("/api/doctors")
+        .then(res => res.json())
+        .then(data => {
+          setDoctors(Array.isArray(data) ? data : data.doctors || []);
+          setLoading(false);
+        })
+        .catch(() => setLoading(false));
+    }
+  }, [doctors.length]);
 
   const filteredDoctors = doctors.filter(doctor => {
     if (!searchQuery || !searchQuery.trim()) return true;

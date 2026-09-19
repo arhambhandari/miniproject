@@ -21,6 +21,7 @@ import {
   Star,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import dynamic from "next/dynamic";
 import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
@@ -28,24 +29,56 @@ import { StatCards } from "@/components/dashboard/StatCards";
 import { PatientVitalsCard } from "@/components/dashboard/PatientVitalsCard";
 import { LiveOPDQueueTracker } from "@/components/dashboard/LiveOPDQueueTracker";
 import { DailyMedicationTracker } from "@/components/dashboard/DailyMedicationTracker";
-import { DigitalOPDPassModal } from "@/components/dashboard/DigitalOPDPassModal";
 import { PlansCard } from "@/components/dashboard/PlansCard";
 import { RightPanel } from "@/components/dashboard/RightPanel";
-import { BookingModal } from "@/components/home/BookingModal";
-import { EmergencyBookingModal } from "@/components/home/EmergencyBookingModal";
-import { WriteReviewModal } from "@/components/dashboard/WriteReviewModal";
-import { MedicalRecordsView } from "@/components/dashboard/MedicalRecordsView";
-import { ConsultationsView } from "@/components/dashboard/ConsultationsView";
-import { NotificationsView } from "@/components/dashboard/NotificationsView";
-import { SettingsView } from "@/components/dashboard/SettingsView";
 import { SimulatorFloatingButton } from "@/components/notifications/SimulatorFloatingButton";
 import { AmbientBackgroundGlow } from "@/components/ui/AmbientBackgroundGlow";
-import { SymptomTriageModal } from "@/components/triage/SymptomTriageModal";
 import { TriageFloatingBanner } from "@/components/triage/TriageFloatingBanner";
-import { MediGuideChatbot } from "@/components/chat/MediGuideChatbot";
 import { MOCK_DOCTORS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageContext";
 import type { Appointment, Doctor } from "@/types";
+
+// Dynamic code-split imports for on-demand modals and views
+const DigitalOPDPassModal = dynamic(
+  () => import("@/components/dashboard/DigitalOPDPassModal").then((m) => m.DigitalOPDPassModal),
+  { ssr: false }
+);
+const BookingModal = dynamic(
+  () => import("@/components/home/BookingModal").then((m) => m.BookingModal),
+  { ssr: false }
+);
+const EmergencyBookingModal = dynamic(
+  () => import("@/components/home/EmergencyBookingModal").then((m) => m.EmergencyBookingModal),
+  { ssr: false }
+);
+const WriteReviewModal = dynamic(
+  () => import("@/components/dashboard/WriteReviewModal").then((m) => m.WriteReviewModal),
+  { ssr: false }
+);
+const MedicalRecordsView = dynamic(
+  () => import("@/components/dashboard/MedicalRecordsView").then((m) => m.MedicalRecordsView),
+  { ssr: false }
+);
+const ConsultationsView = dynamic(
+  () => import("@/components/dashboard/ConsultationsView").then((m) => m.ConsultationsView),
+  { ssr: false }
+);
+const NotificationsView = dynamic(
+  () => import("@/components/dashboard/NotificationsView").then((m) => m.NotificationsView),
+  { ssr: false }
+);
+const SettingsView = dynamic(
+  () => import("@/components/dashboard/SettingsView").then((m) => m.SettingsView),
+  { ssr: false }
+);
+const SymptomTriageModal = dynamic(
+  () => import("@/components/triage/SymptomTriageModal").then((m) => m.SymptomTriageModal),
+  { ssr: false }
+);
+const MediGuideChatbot = dynamic(
+  () => import("@/components/chat/MediGuideChatbot").then((m) => m.MediGuideChatbot),
+  { ssr: false }
+);
 
 // Initial default appointments matching landing page doctors with deterministic dates for SSR
 const INITIAL_APPOINTMENTS: Appointment[] = [

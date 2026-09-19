@@ -254,6 +254,7 @@ export function Hero({ onBook, searchQuery: externalSearch, setSearchQuery: setE
                 width={800}
                 height={600}
                 priority
+                sizes="(max-width: 768px) 100vw, 50vw"
                 className="object-cover h-[560px] w-full group-hover:scale-105 transition-transform duration-700 ease-out"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
