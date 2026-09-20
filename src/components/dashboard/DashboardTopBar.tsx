@@ -7,11 +7,18 @@ import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/components/LanguageContext";
 import { motion } from "framer-motion";
 
+import { FamilyProfileSwitcher } from "@/components/dashboard/FamilyProfileSwitcher";
+import type { FamilyMember } from "@/types";
+
 interface DashboardTopBarProps {
   searchQuery: string;
   setSearchQuery: (query: string) => void;
   userName?: string;
   userImage?: string;
+  activeMember?: FamilyMember;
+  familyMembers?: FamilyMember[];
+  onSelectMember?: (memberId: string) => void;
+  onOpenAddFamilyModal?: () => void;
   onOpenMobileMenu?: () => void;
   onOpenNotifications?: () => void;
   onOpenMessages?: () => void;
@@ -23,6 +30,10 @@ export function DashboardTopBar({
   setSearchQuery,
   userName = "Patient",
   userImage,
+  activeMember,
+  familyMembers = [],
+  onSelectMember,
+  onOpenAddFamilyModal,
   onOpenMobileMenu,
   onOpenNotifications,
   onOpenMessages,
@@ -78,6 +89,15 @@ export function DashboardTopBar({
 
       {/* Right Side Actions */}
       <div className="flex items-center gap-2 sm:gap-2.5 shrink-0">
+        {familyMembers.length > 0 && onSelectMember && onOpenAddFamilyModal && (
+          <FamilyProfileSwitcher
+            members={familyMembers}
+            activeMemberId={activeMember?.id || "fm_self"}
+            onSelectMember={onSelectMember}
+            onOpenAddModal={onOpenAddFamilyModal}
+            compact={true}
+          />
+        )}
         <LanguageSwitcher />
         <ThemeToggle />
 
