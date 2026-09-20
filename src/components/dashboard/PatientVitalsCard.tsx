@@ -11,11 +11,14 @@ import {
   ShieldCheck,
   Lock,
   Stethoscope,
-  Info
+  Info,
+  User
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageContext";
+import { MEMBER_VITALS_MAP } from "@/lib/familyMembers";
+import type { FamilyMember } from "@/types";
 
 interface VitalMetric {
   id: string;
@@ -100,10 +103,36 @@ const INITIAL_VITALS: VitalMetric[] = [
   },
 ];
 
-export function PatientVitalsCard() {
+const VITAL_ICONS: Record<string, React.ElementType> = {
+  bp: HeartPulse,
+  pulse: Activity,
+  glucose: Droplet,
+  spo2: Wind,
+  bmi: Scale,
+  temp: Thermometer,
+};
+
+interface PatientVitalsCardProps {
+  activeMember?: FamilyMember;
+}
+
+export function PatientVitalsCard({ activeMember }: PatientVitalsCardProps) {
   const { language, t } = useLanguage();
   const [vitals, setVitals] = useState<VitalMetric[]>(INITIAL_VITALS);
   const [latestDoctorInfo, setLatestDoctorInfo] = useState<{ doctorName?: string; diagnosis?: string } | null>(null);
+
+  // Synchronize vitals when active member changes
+  useEffect(() => {
+    if (activeMember && MEMBER_VITALS_MAP[activeMember.id]) {
+      const memberVitals = MEMBER_VITALS_MAP[activeMember.id].map((v) => ({
+        ...v,
+        icon: VITAL_ICONS[v.id] || Activity,
+      }));
+      setVitals(memberVitals);
+    } else {
+      setVitals(INITIAL_VITALS);
+    }
+  }, [activeMember?.id]);
 
   const getVitalLabel = (id: string, defaultName: string) => {
     switch (id) {
@@ -125,7 +154,7 @@ export function PatientVitalsCard() {
         return res.json();
       })
       .then((data) => {
-        if (data?.latestVitals) {
+        if (data?.latestVitals && (!activeMember || activeMember.id === "fm_self")) {
           const lv = data.latestVitals;
           setLatestDoctorInfo({
             doctorName: lv.doctorName,
@@ -167,7 +196,7 @@ export function PatientVitalsCard() {
       });
 
     return () => controller.abort();
-  }, []);
+  }, [activeMember?.id]);
 
   const handleVitalTileClick = (vitalId: string, vitalName: string) => {
     if (vitalId === "bp") {
@@ -187,6 +216,9 @@ export function PatientVitalsCard() {
     }
   };
 
+  const memberName = activeMember?.name || "Rahul Sharma";
+  const memberRel = activeMember?.relationship || "Self";
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -202,12 +234,15 @@ export function PatientVitalsCard() {
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 text-emerald-700 flex items-center gap-1">
               <ShieldCheck className="size-3" /> {language === "hi" ? "ABHA / अस्पताल रिकॉर्ड सिंक" : "ABHA / Hospital EHR Synced"}
             </span>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+              {memberName} ({memberRel})
+            </span>
           </div>
-          <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+          <h2 className="text-lg font-bold text-slate-900 dark:text-white" data-testid="vitals-header-title">
             {t("vitals_title")}
           </h2>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            {t("vitals_subtitle")}
+            {t("vitals_subtitle")} • Showing verified biometric metrics for {memberName}
           </p>
         </div>
 
@@ -260,8 +295,12 @@ export function PatientVitalsCard() {
                     <span>{language === "hi" ? "केवल डॉक्टर" : "Doctor Only"}</span>
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                    <Lock className="size-2 text-emerald-600 dark:text-emerald-400" />
+                  <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md flex items-center gap-1 ${
+                    v.status === "Attention"
+                      ? "text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40"
+                      : "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40"
+                  }`}>
+                    <Lock className="size-2" />
                     <span>{v.status === "Optimal" || v.status === "Normal" ? (language === "hi" ? "सामान्य" : v.status) : v.status}</span>
                   </span>
                 )}
@@ -275,7 +314,7 @@ export function PatientVitalsCard() {
                   <Lock className="size-2.5 text-slate-400 inline shrink-0" />
                 </div>
                 <div className="flex items-baseline gap-1 mt-0.5">
-                  <span className="text-lg font-black text-slate-900 dark:text-white">
+                  <span className="text-lg font-black text-slate-900 dark:text-white" data-testid={`vital-value-${v.id}`}>
                     {v.value}
                   </span>
                   <span className="text-[10px] font-medium text-slate-400">
@@ -291,7 +330,7 @@ export function PatientVitalsCard() {
         })}
       </div>
 
-      {latestDoctorInfo?.diagnosis && (
+      {latestDoctorInfo?.diagnosis && (!activeMember || activeMember.id === "fm_self") && (
         <div className="mt-4 p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/60 flex items-center justify-between text-xs">
           <span className="text-slate-700 dark:text-slate-200">
             <strong className="text-blue-700 dark:text-blue-400">Attending Doctor Assessment:</strong>{" "}
