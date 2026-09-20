@@ -12,12 +12,16 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { PatientProfileCard } from "@/components/dashboard/PatientProfileCard";
 import { useLanguage } from "@/components/LanguageContext";
-import type { Appointment } from "@/types";
+import type { Appointment, FamilyMember } from "@/types";
 
 interface RightPanelProps {
   userName?: string;
   userEmail?: string;
   userImage?: string;
+  activeMember?: FamilyMember;
+  familyMembers?: FamilyMember[];
+  onSelectMember?: (memberId: string) => void;
+  onOpenAddFamilyModal?: () => void;
   appointments: Appointment[];
   onCancelAppointment?: (id: string) => void;
   onBookDoctor?: (dateIso?: string) => void;
@@ -60,6 +64,10 @@ export function RightPanel({
   userName = "Rahul Sharma",
   userEmail = "rahul@example.com",
   userImage,
+  activeMember,
+  familyMembers = [],
+  onSelectMember,
+  onOpenAddFamilyModal,
   appointments = [],
   onCancelAppointment,
   onBookDoctor,
@@ -374,6 +382,10 @@ export function RightPanel({
         userName={userName}
         userEmail={userEmail}
         userImage={userImage}
+        activeMember={activeMember}
+        familyMembers={familyMembers}
+        onSelectMember={onSelectMember}
+        onOpenAddFamilyModal={onOpenAddFamilyModal}
         onOpenSettings={onOpenSettings}
       />
     </div>
