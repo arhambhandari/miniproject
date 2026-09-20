@@ -62,6 +62,165 @@ export async function POST(req: Request) {
     const rawQuery = (lastUserMessage?.text || lastUserMessage?.content || "").trim();
     const query = rawQuery.toLowerCase();
 
+    // 00. Check for Hindi / Hinglish Multilingual Query
+    const hasHindiChar = /[\u0900-\u097F]/.test(rawQuery);
+    const isHinglish =
+      /\b(kya|kaise|hai|hain|mujhe|mera|meri|dard|bukhar|lakshan|seene|chhati|pet|sir|sar|saans|sans|sugar|madhumeh|ilaj|dawa|dawae|doctor|hospital|kare|chahiye|dikkat|takleef|chakkar|ulti|khansi)\b/i.test(
+        query
+      );
+    const isHindiQuery = hasHindiChar || isHinglish;
+
+    if (isHindiQuery) {
+      // A. Hindi Emergency Red-Flag Intent
+      const hindiEmergencyKeywords = [
+        "seene me dard", "chhati me dard", "saans lene me takleef", "saans nahi aa rahi",
+        "bahut tez dard", "khoon nikal raha", "behosh", "heart attack", "dil ka daura",
+        "सीने में दर्द", "सांस लेने में तकलीफ", "बेहोश", "खून", "हार्ट अटैक"
+      ];
+
+      if (hindiEmergencyKeywords.some((kw) => query.includes(kw) || rawQuery.includes(kw))) {
+        const emergencyActions: ChatAction[] = [
+          {
+            type: "BOOK_EMERGENCY",
+            label: "🚨 आपातकालीन टोकन बुक करें (#EM-01) - Fast-Track SOS",
+            emergencyReason: rawQuery,
+          },
+        ];
+
+        return NextResponse.json({
+          reply: `⚠️ **आपातकालीन क्लीनिकल चेतावनी (CRITICAL ALERT)**\n\nआपके लक्षण गंभीर चिकित्सा आपातकाल (Acute Emergency) का संकेत दे सकते हैं।\n\n• **तत्काल आपातकालीन सहायता के लिए 108 या 112 पर कॉल करें।**\n• यदि आपको सीने में भारी दबाव, बाएं हाथ या जबड़े में दर्द, या सांस लेने में असमर्थता महसूस हो रही है, तो तुरंत निकटतम अस्पताल की इमरजेंसी में जाएं।\n\nमेडीबुक ने आपके लिए **फास्ट-ट्रैक आपातकालीन टोकन (#EM-01)** की सुविधा सक्रिय की है, जिससे बिना किसी अग्रिम भुगतान के आपका टोकन ओपीडी कतार में सबसे आगे लग जाता है।`,
+          isEmergency: true,
+          actions: emergencyActions,
+          suggestedReplies: [
+            "🚨 आपातकालीन टोकन बुक करें",
+            "🚑 108 एम्बुलेंस डायल करें",
+            "🏥 अपोलो ईआर डेस्क से संपर्क करें",
+          ],
+        });
+      }
+
+      // B. Hindi Cancer Symptoms & Warning Signs Inquiry
+      const isHindiCancerQuery =
+        (/\b(cancer|kark rog)\b/i.test(query) || /कैंसर/.test(rawQuery)) &&
+        (/\b(lakshan|symptoms?|signs?|warning|kya hai|kaise pata)\b/i.test(query) ||
+          /लक्षण|संकेत|पहचान/.test(rawQuery));
+
+      if (isHindiCancerQuery) {
+        const matchedDoctor = await fetchDoctorBySpecialty("Oncology");
+        const actions: ChatAction[] = [
+          {
+            type: "BOOK_DOCTOR",
+            label: `👨‍⚕️ ${matchedDoctor.user.name} से परामर्श लें (${matchedDoctor.specialization})`,
+            doctor: matchedDoctor,
+            data: { reason: "कैंसर लक्षण क्लीनिकल स्क्रीनिंग एवं परामर्श" },
+          },
+          {
+            type: "START_TRIAGE",
+            label: "🔍 30-सेकंड क्लीनिकल प्री-ट्राइएज शुरू करें",
+          },
+          {
+            type: "VIEW_QUEUE",
+            label: "📡 ओपीडी कतार रडार देखें",
+          },
+        ];
+
+        return NextResponse.json({
+          reply: `🎗️ **कैंसर के प्रमुख लक्षण और चेतावनी संकेत (Cancer Warning Signs)**\n\nकैंसर के लक्षण इस बात पर निर्भर करते हैं कि यह शरीर के किस हिस्से में है। चिकित्सा विज्ञान के अनुसार **CAUTION** मानक के तहत 7 प्रमुख चेतावनी संकेत माने जाते हैं:\n\n1. **शरीर में असामान्य गांठ या सूजन**: स्तन, गर्दन, बगल (Armpit) या शरीर के किसी भी हिस्से में नई या बढ़ती हुई गांठ महसूस होना।\n2. **बिना कारण तेजी से वजन घटना**: बिना किसी डायटिंग या व्यायाम के 4-5 किलोग्राम या अधिक वजन अचानक कम होना।\n3. **लगातार खांसी या आवाज में भारीपन**: 3-4 सप्ताह से अधिक रहने वाली खांसी, थूक में खून आना, या आवाज का बैठ जाना।\n4. **ना भरने वाले घाव या छाले**: मुंह, जीभ या त्वचा पर ऐसे छाले जो सामान्य दवाओं से ठीक नहीं हो रहे हों।\n5. **असामान्य रक्तस्राव**: खांसी में खून आना, मल या मूत्र में रक्त, या महिलाओं में रजोनिवृत्ति (Menopause) के बाद रक्तस्राव।\n6. **तिल या मस्से में बदलाव**: त्वचा के किसी तिल के आकार, रंग या बॉर्डर में तेजी से बदलाव आना।\n7. **निगलने में कठिनाई या लगातार अपच**: खाना निगलने में दर्द या पेट में लगातार भारीपन व अपच महसूस होना।\n\n🩺 **क्लीनिकल सलाह**: इनमें से किसी लक्षण का मतलब यह नहीं है कि आपको कैंसर ही है—अधिकांश मामलों में ये सामान्य संक्रमण या सौम्य (Benign) स्थितियां होती हैं। हालांकि, समय पर ऑन्कोलॉजिस्ट (कैंसर विशेषज्ञ) से जांच करवाना सुरक्षित रहता है।`,
+          actions,
+          suggestedReplies: [
+            "कैंसर की जांच (Screening) कैसे होती है?",
+            "डायबिटीज़ के लक्षण क्या हैं?",
+            "ओपीडी टोकन कैसे देखें?",
+          ],
+        });
+      }
+
+      // C. Hindi Diabetes Symptoms Inquiry
+      const isHindiDiabetesQuery =
+        (/\b(sugar|diabetes|madhumeh)\b/i.test(query) || /डायबिटीज|डायबिटीज़|मधुमेह|शुगर/.test(rawQuery)) &&
+        (/\b(lakshan|symptoms?|signs?|kya hai)\b/i.test(query) || /लक्षण|संकेत/.test(rawQuery));
+
+      if (isHindiDiabetesQuery) {
+        const matchedDoctor = await fetchDoctorBySpecialty("General Medicine");
+        const actions: ChatAction[] = [
+          {
+            type: "BOOK_DOCTOR",
+            label: `👨‍⚕️ ${matchedDoctor.user.name} से अपॉइंटमेंट लें`,
+            doctor: matchedDoctor,
+            data: { reason: "डायबिटीज़ / ब्लड शुगर क्लीनिकल जांच" },
+          },
+          {
+            type: "START_TRIAGE",
+            label: "🔍 क्लीनिकल प्री-ट्राइएज शुरू करें",
+          },
+        ];
+
+        return NextResponse.json({
+          reply: `🩸 **डायबिटीज़ (मधुमेह) के मुख्य लक्षण**\n\nडायबिटीज़ के प्रारंभिक लक्षणों को चिकित्सा में '3 Ps' के नाम से जाना जाता है:\n\n1. **बार-बार पेशाब आना (Polyuria)**: विशेषकर रात के समय बार-बार पेशाब जाने की आवश्यकता होना।\n2. **अत्यधिक प्यास लगना (Polydipsia)**: भरपूर पानी पीने के बाद भी लगातार गला और मुंह सूखना।\n3. **अत्यधिक भूख लगना (Polyphagia)**: खाना खाने के कुछ ही समय बाद तीव्र भूख और कमजोरी महसूस होना।\n4. **अत्यधिक थकान व सुस्ती**: कोशिकाओं को ग्लूकोज से ऊर्जा न मिलने के कारण लगातार थकान।\n5. **धुंधला दिखाई देना (Blurry Vision)**: रक्त शर्करा बढ़ने से आंखों के लेंस में तरल असंतुलन।\n6. **घाव भरने में असामान्य समय लगना**: छोटे कट या चोट का हफ्तों तक ठीक न होना।\n\n🩺 **परामर्श**: अपनी फास्टिंग ब्लड शुगर (Fasting Blood Sugar) और HbA1c की जांच करवाएं और जनरल फिजिशियन से परामर्श लें।`,
+          actions,
+          suggestedReplies: [
+            "फास्टिंग ब्लड शुगर का सामान्य स्तर क्या है?",
+            "कैंसर के लक्षण क्या हैं?",
+            "लाइव ओपीडी टोकन कैसे देखें?",
+          ],
+        });
+      }
+
+      // D. Hindi OPD Queue & Token Inquiry
+      const isHindiQueueQuery =
+        /\b(token|queue|katar|number|line|chamber)\b/i.test(query) ||
+        /टोकन|कतार|लाइन|नंबर|कक्ष|ओपीडी/.test(rawQuery);
+
+      if (isHindiQueueQuery) {
+        const currentQueue = queueManager.getQueueState();
+        const actions: ChatAction[] = [
+          {
+            type: "VIEW_QUEUE",
+            label: "📡 लाइव ओपीडी कतार रडार देखें",
+          },
+        ];
+
+        return NextResponse.json({
+          reply: `📍 **अस्पताल लाइव ओपीडी कतार स्थिति (Chamber 304)**\n\n• **कक्ष**: ${currentQueue.roomNumber} (${currentQueue.hospitalName})\n• **उपस्थित चिकित्सक**: ${currentQueue.doctorName}\n• **वर्तमान सेवारत टोकन**: **${currentQueue.currentServingToken}** (${currentQueue.currentPatientName})\n• **कतार स्थिति**: ${currentQueue.status === "EMERGENCY_DELAY" ? "⚠️ आपातकालीन विलंब (+15 मिनट)" : "सक्रिय एवं सामान्य गति"}\n\nमेडीबुक सिस्टम सर्वर-सेंट इवेंट्स (SSE) द्वारा रियल-टाइम में टोकन अपडेट प्रसारित करता है। आप लाइव रडार पर अपनी बारी देख सकते हैं।`,
+          actions,
+          suggestedReplies: [
+            "📡 लाइव ओपीडी कतार देखें",
+            "डॉक्टर से परामर्श कैसे बुक करें?",
+            "कैंसर के लक्षण क्या हैं?",
+          ],
+        });
+      }
+
+      // E. General Hindi Medical Query / Doctor Consultation
+      const matchedDoctor = await fetchDoctorBySpecialty(
+        /sir|sar|matha|head/i.test(query) ? "Neurology" : /pet|stomach/i.test(query) ? "Gastroenterology" : "General Medicine"
+      );
+
+      const actions: ChatAction[] = [
+        {
+          type: "BOOK_DOCTOR",
+          label: `👨‍⚕️ ${matchedDoctor.user.name} से परामर्श लें (${matchedDoctor.specialization})`,
+          doctor: matchedDoctor,
+          data: { reason: rawQuery },
+        },
+        {
+          type: "START_TRIAGE",
+          label: "🔍 30-सेकंड क्लीनिकल प्री-ट्राइएज शुरू करें",
+        },
+      ];
+
+      return NextResponse.json({
+        reply: `नमस्ते! मैंने आपकी स्वास्थ्य पूछताछ प्राप्त की है:\n\n**"${rawQuery}"**\n\nआपके लक्षणों के आधार पर, हमने आपके लिए **${matchedDoctor.specialization}** के विशेषज्ञ **${matchedDoctor.user.name}** की पहचान की है।\n\nयदि यह समस्या पिछले 2-3 दिनों से बनी हुई है या बढ़ रही है, तो कृपया नीचे दिए गए बटन पर क्लिक करके सीधे अपॉइंटमेंट बुक करें या हमारा 30-सेकंड का क्लीनिकल प्री-ट्राइएज चलाएं।`,
+        actions,
+        suggestedReplies: [
+          `👨‍⚕️ ${matchedDoctor.user.name} से अपॉइंटमेंट बुक करें`,
+          "कैंसर के लक्षण क्या हैं?",
+          "डायबिटीज़ के लक्षण क्या हैं?",
+          "📡 ओपीडी टोकन स्थिति देखें",
+        ],
+      });
+    }
+
     // 0. Detect Educational / Symptom Inquiry Intent
     // e.g., "What are the symptom of cancer", "What are the symptoms of diabetes", "symptoms of stroke", "cancer symptoms"
     const isEducationalQuery =
