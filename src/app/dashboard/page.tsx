@@ -36,15 +36,7 @@ import { AmbientBackgroundGlow } from "@/components/ui/AmbientBackgroundGlow";
 import { TriageFloatingBanner } from "@/components/triage/TriageFloatingBanner";
 import { MOCK_DOCTORS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageContext";
-import {
-  DEFAULT_FAMILY_MEMBERS,
-  getStoredFamilyMembers,
-  saveStoredFamilyMembers,
-  getStoredActiveMemberId,
-  saveStoredActiveMemberId,
-} from "@/lib/familyMembers";
-import { AddFamilyMemberModal } from "@/components/dashboard/AddFamilyMemberModal";
-import type { Appointment, Doctor, FamilyMember } from "@/types";
+import type { Appointment, Doctor } from "@/types";
 
 // Dynamic code-split imports for on-demand modals and views
 const DigitalOPDPassModal = dynamic(
@@ -161,40 +153,6 @@ export default function DashboardPage() {
   const [userName, setUserName] = useState("Rahul Sharma");
   const [userEmail, setUserEmail] = useState("rahul.sharma@example.com");
   const [userImage, setUserImage] = useState<string | undefined>(undefined);
-
-  // Family Member Vault State
-  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(DEFAULT_FAMILY_MEMBERS);
-  const [activeMemberId, setActiveMemberId] = useState<string>("fm_self");
-  const [isAddFamilyModalOpen, setIsAddFamilyModalOpen] = useState(false);
-
-  useEffect(() => {
-    const stored = getStoredFamilyMembers();
-    setFamilyMembers(stored);
-    const activeId = getStoredActiveMemberId();
-    if (stored.some((m) => m.id === activeId)) {
-      setActiveMemberId(activeId);
-    }
-  }, []);
-
-  const activeMember =
-    familyMembers.find((m) => m.id === activeMemberId) || familyMembers[0];
-
-  const handleSelectFamilyMember = (memberId: string) => {
-    setActiveMemberId(memberId);
-    saveStoredActiveMemberId(memberId);
-    const selected = familyMembers.find((m) => m.id === memberId);
-    if (selected) {
-      toast.info(`Switched active profile to ${selected.name} (${selected.relationship})`);
-    }
-  };
-
-  const handleAddFamilyMember = (newMember: FamilyMember) => {
-    const updated = [...familyMembers, newMember];
-    setFamilyMembers(updated);
-    saveStoredFamilyMembers(updated);
-    setActiveMemberId(newMember.id);
-    saveStoredActiveMemberId(newMember.id);
-  };
 
   // Doctor booking modal state
   const [selectedDoctor, setSelectedDoctor] = useState<Doctor | null>(null);
@@ -391,12 +349,8 @@ export default function DashboardPage() {
           <DashboardTopBar
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
-            userName={activeMember ? `${activeMember.name} (${activeMember.relationship})` : userName}
-            userImage={activeMember?.avatar || userImage}
-            activeMember={activeMember}
-            familyMembers={familyMembers}
-            onSelectMember={handleSelectFamilyMember}
-            onOpenAddFamilyModal={() => setIsAddFamilyModalOpen(true)}
+            userName={userName}
+            userImage={userImage}
             onOpenMobileMenu={() => setMobileMenuOpen(true)}
             onOpenNotifications={() => setActiveTab("notifications")}
             onOpenMessages={() => setActiveTab("consultations")}
@@ -418,7 +372,7 @@ export default function DashboardPage() {
                 <div className="flex-1 flex flex-col gap-5 lg:gap-6 min-w-0">
                   {/* 1. Hero Welcome Banner */}
                   <WelcomeBanner
-                    userName={activeMember ? activeMember.name : userName}
+                    userName={userName}
                     upcomingCount={upcomingAppointments.length}
                   />
 
@@ -446,10 +400,10 @@ export default function DashboardPage() {
                   />
 
                   {/* 4. Clinical Health Vitals (Blood Pressure, Heart Rate, Glucose, SpO2, BMI) */}
-                  <PatientVitalsCard activeMember={activeMember} />
+                  <PatientVitalsCard />
 
                   {/* 5. Daily Medication & Hydration Adherence */}
-                  <DailyMedicationTracker activeMember={activeMember} />
+                  <DailyMedicationTracker />
 
                   {/* 6. Plans Done */}
                   <PlansCard
@@ -644,10 +598,6 @@ export default function DashboardPage() {
                   userName={userName}
                   userEmail={userEmail}
                   userImage={userImage}
-                  activeMember={activeMember}
-                  familyMembers={familyMembers}
-                  onSelectMember={handleSelectFamilyMember}
-                  onOpenAddFamilyModal={() => setIsAddFamilyModalOpen(true)}
                   appointments={appointments}
                   onCancelAppointment={handleCancel}
                   onBookDoctor={(dateIso) => {
@@ -997,13 +947,6 @@ export default function DashboardPage() {
             setSelectedPassAppointment(appointments[0]);
           }
         }}
-      />
-
-      {/* Add Family Member Modal */}
-      <AddFamilyMemberModal
-        isOpen={isAddFamilyModalOpen}
-        onClose={() => setIsAddFamilyModalOpen(false)}
-        onAddMember={handleAddFamilyMember}
       />
 
       {/* WhatsApp & SMS Health Alert Dispatch Simulator Floating Action */}

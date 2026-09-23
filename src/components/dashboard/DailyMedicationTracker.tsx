@@ -18,9 +18,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useLanguage } from "@/components/LanguageContext";
 
-import { MEMBER_MEDICATIONS_MAP } from "@/lib/familyMembers";
-import type { FamilyMember } from "@/types";
-
 interface MedicationItem {
   id: string;
   name: string;
@@ -69,29 +66,10 @@ const INITIAL_MEDICATIONS: MedicationItem[] = [
   },
 ];
 
-interface DailyMedicationTrackerProps {
-  activeMember?: FamilyMember;
-}
-
-export function DailyMedicationTracker({ activeMember }: DailyMedicationTrackerProps = {}) {
+export function DailyMedicationTracker() {
   const { language, t } = useLanguage();
   const [medications, setMedications] = useState<MedicationItem[]>(INITIAL_MEDICATIONS);
   const [loading, setLoading] = useState(true);
-
-  // Synchronize medications when active family member changes
-  useEffect(() => {
-    if (activeMember && MEMBER_MEDICATIONS_MAP[activeMember.id]) {
-      setMedications(MEMBER_MEDICATIONS_MAP[activeMember.id]);
-      const firstUntaken = MEMBER_MEDICATIONS_MAP[activeMember.id].find((m) => !m.taken);
-      if (firstUntaken) {
-        setSelectedMedId(firstUntaken.id);
-      } else if (MEMBER_MEDICATIONS_MAP[activeMember.id].length > 0) {
-        setSelectedMedId(MEMBER_MEDICATIONS_MAP[activeMember.id][0].id);
-      }
-    } else {
-      setMedications(INITIAL_MEDICATIONS);
-    }
-  }, [activeMember?.id]);
 
   // Patient Log Medication Dose Modal State
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
@@ -108,12 +86,8 @@ export function DailyMedicationTracker({ activeMember }: DailyMedicationTrackerP
     return slot;
   };
 
-  // Fetch live doctor-prescribed medications from DB for primary account holder
+  // Fetch live doctor-prescribed medications from DB
   const loadMedications = (signal?: AbortSignal) => {
-    if (activeMember && activeMember.id !== "fm_self") {
-      setLoading(false);
-      return;
-    }
     fetch("/api/medications", { signal })
       .then((res) => {
         if (!res.ok) return { medications: [] };
@@ -142,7 +116,7 @@ export function DailyMedicationTracker({ activeMember }: DailyMedicationTrackerP
     const controller = new AbortController();
     loadMedications(controller.signal);
     return () => controller.abort();
-  }, [activeMember?.id]);
+  }, []);
 
   const openLogModalForMed = (id?: string) => {
     if (id) {
@@ -277,15 +251,12 @@ export function DailyMedicationTracker({ activeMember }: DailyMedicationTrackerP
               <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 flex items-center gap-1">
                 <CalendarCheck2 className="size-3" /> {language === "hi" ? "रोगी दैनिक खुराक लॉग" : "Patient Daily Medication Log"}
               </span>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800" data-testid="medication-member-badge">
-                {activeMember?.name || "Rahul Sharma"} ({activeMember?.relationship || "Self"})
-              </span>
             </div>
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white" data-testid="medication-tracker-title">
+            <h2 className="text-lg font-bold text-slate-900 dark:text-white">
               {t("med_tracker_title")}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {t("med_tracker_subtitle")} • Showing prescribed regimen for {activeMember?.name || "Rahul Sharma"}
+              {t("med_tracker_subtitle")}
             </p>
           </div>
 

@@ -113,28 +113,3 @@ export type ChatMessage = {
   suggestedReplies?: string[];
   isEmergency?: boolean;
 };
-
-export type FamilyRelationship =
-  | "Self"
-  | "Father"
-  | "Mother"
-  | "Spouse"
-  | "Son"
-  | "Daughter"
-  | "Sibling"
-  | "Other";
-
-export type FamilyMember = {
-  id: string;
-  name: string;
-  relationship: FamilyRelationship;
-  age: number;
-  gender: "Male" | "Female" | "Other";
-  bloodGroup: string;
-  uhid: string;
-  abhaId?: string;
-  allergies?: string[];
-  chronicConditions?: string[];
-  avatar?: string;
-  isPrimary?: boolean;
-};
