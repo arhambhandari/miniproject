@@ -4,7 +4,6 @@ import React from "react";
 import { useLanguage } from "../LanguageContext";
 import { Star, Quote } from "lucide-react";
 import { Card } from "@/components/ui/Card";
-import { motion } from "framer-motion";
 
 export function Testimonials() {
   const { t } = useLanguage();
@@ -16,35 +15,22 @@ export function Testimonials() {
 
   return (
     <section id="testimonials" className="py-20 bg-slate-50 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 relative overflow-hidden">
-      {/* Subtle background glow */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-blue-400/5 rounded-full blur-3xl pointer-events-none" />
 
       <div className="mx-auto max-w-6xl px-4 relative z-10">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.2 }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-14"
-        >
+        <div className="text-center mb-14">
           <h2 className="text-3xl font-extrabold text-slate-900 dark:text-white flex items-baseline justify-center gap-2">
-            {t("testi_title")}{" "}
+            {t("testi_title")} {" "}
             <span className="text-sm font-normal text-slate-500 dark:text-slate-400">(for example)</span>
           </h2>
           <p className="text-slate-600 dark:text-slate-400 text-sm mt-2">
             Real experiences from patients who trust our verified specialists.
           </p>
-        </motion.div>
+        </div>
 
         <div className="grid md:grid-cols-3 gap-6">
           {reviews.map((review, i) => (
-            <motion.div
-              key={i}
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: false, amount: 0.2 }}
-              transition={{ duration: 0.5, delay: i * 0.15 }}
-            >
+            <div key={i}>
               <Card className="p-6 h-full flex flex-col justify-between hover:-translate-y-2 hover:shadow-xl hover:border-blue-300 dark:hover:border-blue-500/40 transition-all duration-300 group relative">
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -79,7 +65,7 @@ export function Testimonials() {
                   </div>
                 </div>
               </Card>
-            </motion.div>
+            </div>
           ))}
         </div>
       </div>
