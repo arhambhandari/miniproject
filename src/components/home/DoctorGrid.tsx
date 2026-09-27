@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { useLanguage } from "../LanguageContext";
 import Image from "next/image";
 import Link from "next/link";
-import { Star, MapPin, Clock, ArrowRight, UserCheck } from "lucide-react";
+import { Star, MapPin, Clock, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { motion } from "framer-motion";
 import type { Doctor } from "@/types";
 
 interface DoctorGridProps {
@@ -23,51 +22,54 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
   const [loading, setLoading] = useState(initialDoctors.length === 0);
 
   useEffect(() => {
-    if (doctors.length === 0) {
-      fetch("/api/doctors")
-        .then(res => res.json())
-        .then(data => {
-          setDoctors(Array.isArray(data) ? data : data.doctors || []);
-          setLoading(false);
-        })
-        .catch(() => setLoading(false));
+    if (initialDoctors.length > 0) {
+      setDoctors(initialDoctors);
+      setLoading(false);
+      return;
     }
-  }, [doctors.length]);
 
-  const filteredDoctors = doctors.filter(doctor => {
-    if (!searchQuery || !searchQuery.trim()) return true;
+    if (doctors.length === 0) {
+      setLoading(true);
+      fetch("/api/doctors")
+        .then((res) => res.json())
+        .then((data) => {
+          setDoctors(Array.isArray(data) ? data : data.doctors || []);
+        })
+        .catch(() => setDoctors([]))
+        .finally(() => setLoading(false));
+    }
+  }, [initialDoctors, doctors.length]);
+
+  const filteredDoctors = useMemo(() => {
+    if (!searchQuery || !searchQuery.trim()) return doctors;
+
     const q = searchQuery.toLowerCase().trim();
-    return (
-      doctor.user.name.toLowerCase().includes(q) ||
-      doctor.specialization.toLowerCase().includes(q) ||
-      (doctor.hospitalName && doctor.hospitalName.toLowerCase().includes(q))
-    );
-  });
+    return doctors.filter((doctor) => {
+      return (
+        doctor.user.name.toLowerCase().includes(q) ||
+        doctor.specialization.toLowerCase().includes(q) ||
+        (doctor.hospitalName && doctor.hospitalName.toLowerCase().includes(q))
+      );
+    });
+  }, [doctors, searchQuery]);
 
   return (
     <section id="doctors" className="py-24 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 scroll-mt-10">
       <div className="mx-auto max-w-6xl px-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: false, amount: 0.2 }}
-          transition={{ duration: 0.6 }}
-          className="flex justify-between items-end mb-8"
-        >
+        <div className="flex justify-between items-end mb-8">
           <div>
             <span className="text-xs font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-3 py-1 rounded-full">
               Top Specialists
             </span>
             <h2 className="text-3xl sm:text-4xl font-extrabold text-slate-900 dark:text-white mt-3 flex items-baseline gap-2">
-              {t("doctors_title")}{" "}
-              <span className="text-sm font-normal text-slate-500 dark:text-slate-400">(for example)</span>
+              {t("doctors_title")} <span className="text-sm font-normal text-slate-500 dark:text-slate-400">(for example)</span>
             </h2>
             <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">{t("doctors_subtitle")}</p>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
             {searchQuery.trim() && onClearSearch && (
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={() => onClearSearch?.()}
                 className="hover:scale-[1.02] transition-transform cursor-pointer text-xs"
@@ -75,7 +77,7 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
                 Clear Search
               </Button>
             )}
-            <Link 
+            <Link
               href="/doctors"
               className="inline-flex items-center gap-1.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 hover:scale-[1.02] transition-all shadow-xs cursor-pointer"
             >
@@ -83,11 +85,10 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
               <ArrowRight className="size-3.5 text-blue-600 dark:text-blue-400" />
             </Link>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Active Filter Pill */}
         {searchQuery.trim() && (
-          <div className="mb-8 flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 text-sm animate-in fade-in">
+          <div className="mb-8 flex items-center justify-between p-3.5 rounded-2xl bg-blue-50/80 dark:bg-blue-950/40 border border-blue-200/80 dark:border-blue-800/80 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-slate-600 dark:text-slate-300">Filtered by:</span>
               <span className="font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded-lg border border-blue-200 dark:border-blue-700">
@@ -132,15 +133,9 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
               )}
             </div>
           ) : (
-            filteredDoctors.slice(0, 6).map((doctor, i) => (
-              <motion.div
-                key={doctor.id}
-                initial={{ opacity: 0, y: 25 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: false, amount: 0.15 }}
-                transition={{ duration: 0.5, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
-              >
-                <Card className="p-4 hover:shadow-xl hover:-translate-y-1.5 border-slate-200/80 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-500/50 transition-all duration-300 group">
+            filteredDoctors.slice(0, 6).map((doctor) => (
+              <div key={doctor.id}>
+                <Card className="p-4 hover:shadow-xl hover:-translate-y-1.5 border-slate-200/80 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-500/50 transition-all duration-200 group">
                   <div className="flex gap-4">
                     <Link
                       href={`/doctors/${doctor.id}`}
@@ -153,7 +148,7 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
                           alt={doctor.user.name}
                           width={96}
                           height={96}
-                          className="w-full h-full object-cover group-hover:scale-108 transition-transform duration-500 ease-out"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500 ease-out"
                         />
                       ) : (
                         <div className="w-full h-full bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-extrabold flex items-center justify-center text-2xl select-none">
@@ -192,7 +187,7 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
                     </div>
                   </div>
 
-                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 grid grid-cols-2 gap-4 mb-4">
+                  <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-200/0 grid grid-cols-2 gap-4 mb-4">
                     <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-400">
                       <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                         <MapPin className="size-4" />
@@ -230,12 +225,11 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
                     </Button>
                   </div>
                 </Card>
-              </motion.div>
+              </div>
             ))
           )}
         </div>
 
-        {/* Bottom Explorer Link */}
         <div className="mt-12 text-center">
           <Link
             href="/doctors"
