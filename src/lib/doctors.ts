@@ -1,3 +1,4 @@
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getOrSetCache, invalidateCache } from "@/lib/cache";
 import { MOCK_DOCTORS } from "@/lib/data";
@@ -17,7 +18,7 @@ export async function getDoctorsData(params: GetDoctorsParams = {}): Promise<Doc
     cacheKey,
     async () => {
       try {
-        const where: any = {};
+        const where: Prisma.DoctorProfileWhereInput = {};
 
         if (specialty && specialty !== "ALL SPECIALTIES") {
           where.specialization = {
@@ -33,7 +34,9 @@ export async function getDoctorsData(params: GetDoctorsParams = {}): Promise<Doc
           ];
         }
 
-        let orderBy: any = { experience: "desc" };
+        let orderBy: Prisma.DoctorProfileOrderByWithRelationInput = {
+          experience: "desc",
+        };
         if (sort === "HIGHEST RATED") {
           orderBy = { satisfaction: "desc" };
         } else if (sort === "MOST REVIEWED") {
