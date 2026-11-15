@@ -27,7 +27,14 @@ import { toast } from "sonner";
 import Script from "next/script";
 import Image from "next/image";
 import type { Doctor } from "@/types";
-import { loadRazorpayScript } from "@/lib/razorpay";
+import {
+  getRazorpayError,
+  isRazorpayOrder,
+  loadRazorpayScript,
+  type RazorpayOrder,
+  type RazorpayOptions,
+  type RazorpayPaymentResponse,
+} from "@/lib/razorpay";
 import { RazorpayCheckoutModal } from "@/components/payment/RazorpayCheckoutModal";
 import { playPaymentSuccessSound } from "@/lib/sound";
 
@@ -39,39 +46,6 @@ interface BookingModalProps {
 }
 
 export function BookingModal({ doctor, onClose, initialDate, initialDisease }: BookingModalProps) {
-  const [bookingDate, setBookingDate] = useState("");
-  const [bookingTime, setBookingTime] = useState("10:30 AM");
-  const [patientName, setPatientName] = useState("");
-  const [patientContact, setPatientContact] = useState("+91 98765 43210");
-  const [patientEmail, setPatientEmail] = useState("");
-  const [disease, setDisease] = useState(initialDisease || "General Health Consultation");
-  const [showCustomDate, setShowCustomDate] = useState(false);
-
-  useEffect(() => {
-    if (initialDisease) {
-      setDisease(initialDisease);
-    }
-  }, [initialDisease]);
-
-  // Payment method selection & options (UPI or Card)
-  const [paymentMethod, setPaymentMethod] = useState<"upi" | "card">("upi");
-  const [selectedUpiApp, setSelectedUpiApp] = useState<string>("gpay");
-  const [upiId, setUpiId] = useState("");
-  const [cardNumber, setCardNumber] = useState("");
-  const [cardHolder, setCardHolder] = useState("");
-  const [cardExpiry, setCardExpiry] = useState("");
-  const [cardCvv, setCardCvv] = useState("");
-  const [saveCard, setSaveCard] = useState(true);
-  const [confirmedPaymentMethod, setConfirmedPaymentMethod] = useState("");
-
-  const [modalStep, setModalStep] = useState<"details" | "success" | "error">("details");
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
-  const [razorpayOrder, setRazorpayOrder] = useState<any>(null);
-  const [confirmedPaymentId, setConfirmedPaymentId] = useState("");
-  const [emailPreview, setEmailPreview] = useState("");
-  const [bookingErrorMessage, setBookingErrorMessage] = useState("");
-
   // Quick date options generator (Today, +1 day, +2 days, etc.)
   const quickDates = React.useMemo(() => {
     const dates = [];
@@ -87,38 +61,60 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
     return dates;
   }, []);
 
+  const [bookingDate, setBookingDate] = useState(initialDate || quickDates[0]?.iso || "");
+  const [bookingTime, setBookingTime] = useState("10:30 AM");
+  const [patientName, setPatientName] = useState("");
+  const [patientContact, setPatientContact] = useState("+91 98765 43210");
+  const [patientEmail, setPatientEmail] = useState("");
+  const [diseaseOverride, setDiseaseOverride] = useState<string | null>(null);
+  const disease = diseaseOverride ?? initialDisease ?? "General Health Consultation";
+  const [showCustomDate, setShowCustomDate] = useState(
+    Boolean(initialDate && !quickDates.some((date) => date.iso === initialDate))
+  );
+
+  // Payment method selection & options (UPI or Card)
+  const [paymentMethod, setPaymentMethod] = useState<"upi" | "card">("upi");
+  const [selectedUpiApp, setSelectedUpiApp] = useState<string>("gpay");
+  const [upiId, setUpiId] = useState("");
+  const [cardNumber, setCardNumber] = useState("");
+  const [cardHolder, setCardHolder] = useState("");
+  const [cardExpiry, setCardExpiry] = useState("");
+  const [cardCvv, setCardCvv] = useState("");
+  const [saveCard, setSaveCard] = useState(true);
+  const [confirmedPaymentMethod, setConfirmedPaymentMethod] = useState("");
+
+  const [modalStep, setModalStep] = useState<"details" | "success" | "error">("details");
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isRazorpayModalOpen, setIsRazorpayModalOpen] = useState(false);
+  const [razorpayOrder, setRazorpayOrder] = useState<RazorpayOrder | null>(null);
+  const [confirmedPaymentId, setConfirmedPaymentId] = useState("");
+  const [emailPreview, setEmailPreview] = useState("");
+  const [bookingErrorMessage, setBookingErrorMessage] = useState("");
+
   const timeSlots = {
     morning: ["09:00 AM", "10:30 AM", "11:45 AM"],
     afternoon: ["02:00 PM", "03:30 PM", "05:00 PM", "06:30 PM"],
   };
 
-  // Pre-fill user details from session and set default date
+  // Pre-fill user details from the active session.
   useEffect(() => {
-    if (doctor) {
-      setModalStep("details");
-      const targetDate = initialDate || quickDates[0]?.iso || "";
-      setBookingDate(targetDate);
-      setBookingTime("10:30 AM");
-      setIsProcessing(false);
-      setShowCustomDate(Boolean(initialDate && !quickDates.some((q) => q.iso === initialDate)));
-
-      // Attempt to pre-fill session user
-      fetch("/api/auth/session")
-        .then((res) => res.json())
-        .then((data) => {
-          if (data?.user?.name && !patientName) {
-            setPatientName(data.user.name);
-          }
-          if (data?.user?.name && !cardHolder) {
-            setCardHolder(data.user.name);
-          }
-          if (data?.user?.email && !patientEmail) {
-            setPatientEmail(data.user.email);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [doctor, quickDates, initialDate]);
+    if (!doctor) return;
+    let isActive = true;
+    void fetch("/api/auth/session")
+      .then((res) => res.json())
+      .then((data) => {
+        if (!isActive) return;
+        if (data?.user?.name && !patientName) setPatientName(data.user.name);
+        if (data?.user?.name && !cardHolder) setCardHolder(data.user.name);
+        if (data?.user?.email && !patientEmail) setPatientEmail(data.user.email);
+      })
+      .catch((error: unknown) => {
+        console.warn("Could not prefill booking details from the session:", error);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [doctor]);
 
   // Card brand detection helper
   const getCardBrand = (num: string) => {
@@ -213,11 +209,15 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ doctorId: doctor.id }),
       });
-      const orderData = await orderRes.json();
+      const orderPayload: unknown = await orderRes.json();
 
       if (!orderRes.ok) {
-        throw new Error(orderData.error || "Order creation failed");
+        throw new Error(getRazorpayError(orderPayload, "Order creation failed"));
       }
+      if (!isRazorpayOrder(orderPayload)) {
+        throw new Error("The payment service returned an invalid order.");
+      }
+      const orderData = orderPayload;
 
       setRazorpayOrder(orderData);
 
@@ -230,7 +230,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
 
       if (hasRealKey) {
         const isScriptLoaded = await loadRazorpayScript();
-        if (isScriptLoaded && typeof (window as any).Razorpay !== "undefined") {
+        if (isScriptLoaded && window.Razorpay) {
           launchOfficialRazorpay(orderData, methodSummary);
           return;
         }
@@ -239,26 +239,31 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
       // Launch interactive Razorpay Standard Checkout Test Mode simulator
       setIsProcessing(false);
       setIsRazorpayModalOpen(true);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Booking error:", error);
-      toast.error(error?.message || "Booking failed");
-      setBookingErrorMessage(error?.message || "Failed to initialize payment gateway");
+      const message = error instanceof Error ? error.message : "Booking failed";
+      toast.error(message);
+      setBookingErrorMessage(message);
       setModalStep("error");
       setIsProcessing(false);
     }
   };
 
-  const launchOfficialRazorpay = (orderData: any, summary: string) => {
+  const launchOfficialRazorpay = (orderData: RazorpayOrder, summary: string) => {
+    const RazorpayConstructor = window.Razorpay;
+    if (!RazorpayConstructor) {
+      throw new Error("Razorpay Checkout is not available.");
+    }
     const keyId = orderData.key_id || process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID;
 
-    const options = {
+    const options: RazorpayOptions = {
       key: keyId,
       amount: orderData.amount,
       currency: orderData.currency || "INR",
-      name: "MediBook",
+      name: "MediNova",
       description: `Consultation with ${doctor?.user?.name || "Doctor"}`,
       order_id: orderData.id,
-      handler: async function (response: any) {
+      handler: async function (response: RazorpayPaymentResponse) {
         await handlePaymentSuccess({
           razorpay_order_id: response.razorpay_order_id,
           razorpay_payment_id: response.razorpay_payment_id,
@@ -282,10 +287,11 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
       },
     };
 
-    const rzp = new (window as any).Razorpay(options);
-    rzp.on("payment.failed", function (response: any) {
-      toast.error(response?.error?.description || "Payment failed. Please try again.");
-      setBookingErrorMessage(response?.error?.description || "Payment failed.");
+    const rzp = new RazorpayConstructor(options);
+    rzp.on("payment.failed", function (response) {
+      const message = response.error?.description || "Payment failed. Please try again.";
+      toast.error(message);
+      setBookingErrorMessage(message);
       setIsProcessing(false);
       setModalStep("error");
     });
@@ -293,9 +299,9 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
   };
 
   const handlePaymentSuccess = async (paymentData: {
-    razorpay_order_id: string;
-    razorpay_payment_id: string;
-    razorpay_signature: string;
+    razorpay_order_id: RazorpayPaymentResponse["razorpay_order_id"];
+    razorpay_payment_id: RazorpayPaymentResponse["razorpay_payment_id"];
+    razorpay_signature: RazorpayPaymentResponse["razorpay_signature"];
     method: string;
   }) => {
     setIsRazorpayModalOpen(false);
@@ -355,9 +361,11 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
         toast.error(msg);
         setModalStep("error");
       }
-    } catch (e: any) {
-      console.error("Post-payment error:", e);
-      setBookingErrorMessage(e?.message || "Failed to finalize appointment record.");
+    } catch (error: unknown) {
+      console.error("Post-payment error:", error);
+      setBookingErrorMessage(
+        error instanceof Error ? error.message : "Failed to finalize appointment record."
+      );
       setModalStep("error");
     } finally {
       setIsProcessing(false);
@@ -436,7 +444,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
                       {doctor.reviews && doctor.reviews.length > 0 ? (
                         <span className="flex items-center gap-1 font-medium">
                           <Star className="size-3.5 fill-amber-400 text-amber-400" />
-                          {(doctor.reviews.reduce((acc: number, r: any) => acc + (r.rating || 5), 0) / doctor.reviews.length).toFixed(1)} ({doctor.reviews.length} reviews)
+                          {(doctor.reviews.reduce((total, review) => total + (review.rating || 5), 0) / doctor.reviews.length).toFixed(1)} ({doctor.reviews.length} reviews)
                         </span>
                       ) : (
                         <span className="flex items-center gap-1 text-slate-400">
@@ -628,7 +636,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
                       required
                       placeholder="Reason for visit / symptoms"
                       value={disease}
-                      onChange={(e) => setDisease(e.target.value)}
+                      onChange={(e) => setDiseaseOverride(e.target.value)}
                       className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-xs"
                     />
                   </div>
@@ -955,7 +963,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
                 Your Appointment is Scheduled!
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mt-1.5">
-                We've reserved your consultation with {doctor?.user?.name || "your doctor"}. A confirmation receipt has been sent to your email.
+                We&apos;ve reserved your consultation with {doctor?.user?.name || "your doctor"}. A confirmation receipt has been sent to your email.
               </p>
 
               <div className="pt-2">
@@ -1076,7 +1084,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
             setIsRazorpayModalOpen(false);
             setIsProcessing(false);
           }}
-          orderId={razorpayOrder?.id || `order_test_${Date.now()}`}
+          orderId={razorpayOrder?.id || "order_test_pending"}
           amount={doctor.fee || 1500}
           doctorName={doctor.user.name}
           patientName={patientName || "Verified Patient"}

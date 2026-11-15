@@ -4,9 +4,10 @@ import React, { useState } from "react";
 import { MessageSquare, Sparkles } from "lucide-react";
 import { motion } from "framer-motion";
 import { WhatsAppSmsSimulatorModal } from "./WhatsAppSmsSimulatorModal";
+import type { Appointment } from "@/types";
 
 interface SimulatorFloatingButtonProps {
-  initialAppointment?: any;
+  initialAppointment?: Appointment;
   defaultTemplate?: "APPOINTMENT_PASS" | "MEDICATION_REMINDER" | "DOCTOR_DELAY" | "LAB_READY";
 }
 

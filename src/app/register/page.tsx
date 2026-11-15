@@ -64,7 +64,7 @@ export default function RegisterPage() {
             <span className="flex size-10 items-center justify-center rounded-xl bg-blue-600 text-white">
               <HeartPulse className="size-6" />
             </span>
-            <span className="font-bold text-xl text-slate-900 dark:text-white">MediBook</span>
+            <span className="font-bold text-xl text-slate-900 dark:text-white">MediNova</span>
           </Link>
         </div>
         
@@ -76,14 +76,14 @@ export default function RegisterPage() {
             onClick={() => setRole("patient")}
             className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${role === "patient" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
           >
-            I'm a Patient
+            I&apos;m a Patient
           </button>
           <button 
             type="button"
             onClick={() => setRole("doctor")}
             className={`flex-1 py-2 text-sm font-semibold rounded-lg transition-colors ${role === "doctor" ? "bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
           >
-            I'm a Doctor
+            I&apos;m a Doctor
           </button>
         </div>
 

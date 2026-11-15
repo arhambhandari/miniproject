@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   User,
   Building2,
@@ -47,19 +47,16 @@ export function DoctorProfileEditor({
   const [formData, setFormData] = useState<DoctorProfileData>(initialProfile);
   const [saving, setSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
+  const activeFormData = hasChanges ? formData : initialProfile;
 
-  useEffect(() => {
-    if (!hasChanges) {
-      setFormData(initialProfile);
-    }
-  }, [initialProfile, hasChanges]);
-
-  const handleChange = (field: keyof DoctorProfileData, value: any) => {
+  const handleChange = <Field extends keyof DoctorProfileData>(
+    field: Field,
+    value: DoctorProfileData[Field]
+  ) => {
     setFormData((prev) => {
-      const updated = { ...prev, [field]: value };
-      setHasChanges(true);
-      return updated;
+      return { ...prev, [field]: value };
     });
+    setHasChanges(true);
   };
 
   const handleReset = () => {
@@ -76,7 +73,7 @@ export function DoctorProfileEditor({
       const res = await fetch("/api/doctor/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(activeFormData),
       });
 
       const data = await res.json();
@@ -103,22 +100,22 @@ export function DoctorProfileEditor({
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-700">
           <div className="flex items-center gap-4">
             <div className="size-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white flex items-center justify-center font-black text-2xl shadow-lg shadow-blue-500/20">
-              {formData.name.replace(/^Dr\.\s*/, "").charAt(0) || "D"}
+              {activeFormData.name.replace(/^Dr\.\s*/, "").charAt(0) || "D"}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h3 className="text-xl font-black text-slate-900 dark:text-white">
-                  {formData.name.startsWith("Dr.") ? formData.name : `Dr. ${formData.name}`}
+                  {activeFormData.name.startsWith("Dr.") ? activeFormData.name : `Dr. ${activeFormData.name}`}
                 </h3>
                 <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
                   <ShieldCheck className="size-3" /> NMC & ABHA Verified
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                {formData.specialization} • {formData.experience} Years Clinical Experience
+                {activeFormData.specialization} • {activeFormData.experience} Years Clinical Experience
               </p>
               <p className="text-xs text-blue-600 dark:text-blue-400 font-medium mt-1">
-                {formData.hospitalName}
+                {activeFormData.hospitalName}
               </p>
             </div>
           </div>
@@ -154,7 +151,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="text"
-              value={formData.name}
+              value={activeFormData.name}
               onChange={(e) => handleChange("name", e.target.value)}
               placeholder="e.g. Dr. Aarav Mehta"
               required
@@ -169,7 +166,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="text"
-              value={formData.specialization}
+              value={activeFormData.specialization}
               onChange={(e) => handleChange("specialization", e.target.value)}
               placeholder="e.g. NEURO-ONCOLOGY, CARDIOLOGY"
               required
@@ -184,7 +181,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="text"
-              value={formData.qualifications}
+              value={activeFormData.qualifications}
               onChange={(e) => handleChange("qualifications", e.target.value)}
               placeholder="e.g. MBBS, MS, MCh (AIIMS New Delhi)"
               required
@@ -199,7 +196,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="number"
-              value={formData.experience}
+              value={activeFormData.experience}
               onChange={(e) => handleChange("experience", Number(e.target.value))}
               placeholder="e.g. 15"
               min="1"
@@ -216,7 +213,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="text"
-              value={formData.hospitalName}
+              value={activeFormData.hospitalName}
               onChange={(e) => handleChange("hospitalName", e.target.value)}
               placeholder="e.g. AIIMS Super Specialty Hospital, New Delhi"
               required
@@ -231,7 +228,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="text"
-              value={formData.roomNumber || "OPD Chamber 304"}
+              value={activeFormData.roomNumber || "OPD Chamber 304"}
               onChange={(e) => handleChange("roomNumber", e.target.value)}
               placeholder="e.g. OPD Chamber 304, Specialist Wing"
               className="w-full h-11 px-3.5 rounded-xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
@@ -245,7 +242,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="number"
-              value={formData.fee}
+              value={activeFormData.fee}
               onChange={(e) => handleChange("fee", Number(e.target.value))}
               placeholder="e.g. 2000"
               min="100"
@@ -262,7 +259,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="text"
-              value={formData.contactNumber}
+              value={activeFormData.contactNumber}
               onChange={(e) => handleChange("contactNumber", e.target.value)}
               placeholder="e.g. +91 98201 44521"
               required
@@ -277,7 +274,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="text"
-              value={formData.nextAvailable}
+              value={activeFormData.nextAvailable}
               onChange={(e) => handleChange("nextAvailable", e.target.value)}
               placeholder="e.g. OCT 12 or Today"
               required
@@ -292,7 +289,7 @@ export function DoctorProfileEditor({
             </label>
             <input
               type="email"
-              value={formData.email || ""}
+              value={activeFormData.email || ""}
               disabled
               className="w-full h-11 px-3.5 rounded-xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs font-medium text-slate-500 dark:text-slate-400 cursor-not-allowed"
             />
@@ -304,7 +301,7 @@ export function DoctorProfileEditor({
               <FileText className="size-3.5 text-blue-600" /> Clinical Background & Expertise Bio
             </label>
             <textarea
-              value={formData.bio}
+              value={activeFormData.bio}
               onChange={(e) => handleChange("bio", e.target.value)}
               rows={4}
               placeholder="Describe clinical specializations, patient care approach, hospital affiliations..."

@@ -232,7 +232,7 @@ export function NotificationsView({
           ].map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setFilter(tab.id as any)}
+              onClick={() => setFilter(tab.id as "all" | "unread" | "appointment" | "report")}
               className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                 filter === tab.id
                   ? "bg-blue-600 text-white shadow-sm shadow-blue-500/20"

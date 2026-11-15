@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import { HeartPulse } from "lucide-react";
 import { signIn } from "next-auth/react";
@@ -15,13 +15,11 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const router = useRouter();
 
-  const [isRegistered, setIsRegistered] = useState(false);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.location.search.includes("registered=true")) {
-      setIsRegistered(true);
-    }
-  }, []);
+  const isRegistered = useSyncExternalStore(
+    () => () => {},
+    () => new URLSearchParams(window.location.search).get("registered") === "true",
+    () => false
+  );
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +65,7 @@ export default function LoginPage() {
             <span className="flex size-10 items-center justify-center rounded-xl bg-blue-600 text-white">
               <HeartPulse className="size-6" />
             </span>
-            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MediBook</span>
+            <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white">MediNova</span>
           </Link>
         </div>
         
@@ -113,7 +111,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-6 text-center text-sm text-slate-500 dark:text-slate-400">
-          Don't have an account? <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">Sign up</Link>
+          Don&apos;t have an account? <Link href="/register" className="text-blue-600 dark:text-blue-400 hover:underline">Sign up</Link>
         </p>
       </div>
     </div>

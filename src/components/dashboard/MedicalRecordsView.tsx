@@ -176,7 +176,7 @@ export function MedicalRecordsView({ userName = "Rahul Sharma", onReturnToOvervi
             ].map(f => (
               <button
                 key={f.id}
-                onClick={() => setSelectedFilter(f.id as any)}
+                onClick={() => setSelectedFilter(f.id as "all" | "lab" | "prescription")}
                 className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   selectedFilter === f.id
                     ? "bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm"

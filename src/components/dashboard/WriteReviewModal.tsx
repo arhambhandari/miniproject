@@ -4,12 +4,12 @@ import React, { useState } from "react";
 import { Modal } from "@/components/ui/Modal";
 import { Star, CheckCircle2, Sparkles, Building2, Calendar, Stethoscope, ThumbsUp, UserCircle2 } from "lucide-react";
 import { toast } from "sonner";
-import type { Appointment } from "@/types";
+import type { Appointment, Review } from "@/types";
 
 interface WriteReviewModalProps {
   appointment: Appointment | null;
   onClose: () => void;
-  onReviewSubmitted: (appointmentId: string, review: any) => void;
+  onReviewSubmitted: (appointmentId: string, review: Review) => void;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -102,10 +102,21 @@ export function WriteReviewModal({
           date: "Just now",
           text: finalComment,
         };
-        const existing = JSON.parse(localStorage.getItem(`medibook_reviews_${appointment.doctorId}`) || "[]");
+        const existing: unknown = JSON.parse(localStorage.getItem(`medibook_reviews_${appointment.doctorId}`) || "[]");
+        const existingReviews = Array.isArray(existing) ? existing : [];
         localStorage.setItem(
           `medibook_reviews_${appointment.doctorId}`,
-          JSON.stringify([localReview, ...existing.filter((r: any) => r.id !== localReview.id)])
+          JSON.stringify([
+            localReview,
+            ...existingReviews.filter(
+              (review): review is { id: string } =>
+                typeof review === "object" &&
+                review !== null &&
+                "id" in review &&
+                typeof review.id === "string" &&
+                review.id !== localReview.id
+            ),
+          ])
         );
       } catch (e) {
         console.warn("Could not write to localStorage:", e);
@@ -116,9 +127,9 @@ export function WriteReviewModal({
       );
       onReviewSubmitted(appointment.id, data.review);
       onClose();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Review submission error:", error);
-      toast.error(error.message || "Failed to publish review. Please try again.");
+      toast.error(error instanceof Error ? error.message : "Failed to publish review. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

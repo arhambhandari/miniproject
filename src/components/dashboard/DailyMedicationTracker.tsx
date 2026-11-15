@@ -96,7 +96,7 @@ export function DailyMedicationTracker() {
       .then((data) => {
         if (data?.medications && Array.isArray(data.medications) && data.medications.length > 0) {
           setMedications(data.medications);
-          const firstUntaken = data.medications.find((m: any) => !m.taken);
+          const firstUntaken = data.medications.find((medication: MedicationItem) => !medication.taken);
           if (firstUntaken) {
             setSelectedMedId(firstUntaken.id);
           } else {
@@ -221,8 +221,8 @@ export function DailyMedicationTracker() {
       );
 
       setIsLogModalOpen(false);
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to record medication dose");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to record medication dose");
     } finally {
       setIsSavingDose(false);
     }

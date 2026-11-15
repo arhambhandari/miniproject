@@ -14,9 +14,15 @@ test.describe('Database Integrity, Live Fee & Double-Booking Prevention', () => 
     // 2. Fetch doctor list to get Dr. Aarav Mehta's database ID
     const doctorsRes = await page.request.get('/api/doctors');
     expect(doctorsRes.status()).toBe(200);
-    const doctors = await doctorsRes.json();
-    const aarav = doctors.find((d: any) => d.user?.name?.includes('Aarav') || d.name?.includes('Aarav'));
+    const doctors = (await doctorsRes.json()) as Array<{
+      id: string;
+      fee: number;
+      name?: string;
+      user?: { name?: string | null } | null;
+    }>;
+    const aarav = doctors.find((doctor) => doctor.user?.name?.includes('Aarav') || doctor.name?.includes('Aarav'));
     expect(aarav).toBeDefined();
+    if (!aarav) throw new Error("Expected Dr. Aarav Mehta to be returned by the doctors API.");
 
     // 3. Request Razorpay order creation for Aarav
     const orderRes = await page.request.post('/api/payments/create-order', {

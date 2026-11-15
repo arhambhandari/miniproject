@@ -26,6 +26,12 @@ interface ConsultationsViewProps {
   onOpenBooking: () => void;
 }
 
+interface ConsultationMessage {
+  sender: "doctor" | "patient";
+  text: string;
+  time: string;
+}
+
 export function ConsultationsView({
   appointments,
   userName = "Rahul Sharma",
@@ -33,10 +39,10 @@ export function ConsultationsView({
   onOpenBooking,
 }: ConsultationsViewProps) {
   const [selectedDoctorIndex, setSelectedDoctorIndex] = useState(0);
-  const [chatMessages, setChatMessages] = useState<{ sender: "doctor" | "patient"; text: string; time: string }[]>([
+  const [chatMessages, setChatMessages] = useState<ConsultationMessage[]>([
     {
       sender: "doctor",
-      text: "Hello Rahul, welcome to your MediBook consultation thread. Please review your recent lab reports before our appointment.",
+      text: "Hello Rahul, welcome to your MediNova consultation thread. Please review your recent lab reports before our appointment.",
       time: "10:15 AM",
     },
     {
@@ -79,13 +85,29 @@ export function ConsultationsView({
 
       const res = await fetch(`/api/messages${partnerQuery}`);
       if (res.ok) {
-        const data = await res.json();
-        if (data.messages && Array.isArray(data.messages) && data.messages.length > 0) {
-          const formatted = data.messages.map((m: any) => ({
-            sender: m.senderRole === "DOCTOR" ? ("doctor" as const) : ("patient" as const),
-            text: m.content,
-            time: m.time || "Just now",
-          }));
+        const data: unknown = await res.json();
+        if (
+          typeof data === "object" &&
+          data !== null &&
+          "messages" in data &&
+          Array.isArray(data.messages) &&
+          data.messages.length > 0
+        ) {
+          const formatted = data.messages.flatMap((message): ConsultationMessage[] => {
+            if (
+              typeof message !== "object" ||
+              message === null ||
+              !("content" in message) ||
+              typeof message.content !== "string"
+            ) {
+              return [];
+            }
+            return [{
+              sender: "senderRole" in message && message.senderRole === "DOCTOR" ? "doctor" : "patient",
+              text: message.content,
+              time: "time" in message && typeof message.time === "string" ? message.time : "Just now",
+            }];
+          });
           setChatMessages(formatted);
         }
       }
@@ -95,9 +117,12 @@ export function ConsultationsView({
   };
 
   React.useEffect(() => {
-    fetchMessages();
+    const initialFetch = window.setTimeout(() => void fetchMessages(), 0);
     const interval = setInterval(fetchMessages, 3500);
-    return () => clearInterval(interval);
+    return () => {
+      window.clearTimeout(initialFetch);
+      clearInterval(interval);
+    };
   }, [currentAppointment.doctorUserId, currentAppointment.id]);
 
   const handleSendMessage = async (e: React.FormEvent) => {

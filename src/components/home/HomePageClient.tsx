@@ -23,6 +23,7 @@ export function HomePageClient({ initialDoctors = [] }: HomePageClientProps) {
   return (
     <>
       <Hero
+        doctors={initialDoctors}
         onBook={(doctor) => setSelectedDoctor(doctor)}
         searchQuery={searchQuery}
         setSearchQuery={setSearchQuery}

@@ -50,13 +50,13 @@ export function DashboardSidebar({
           <Link
             href="/"
             className="size-11 sm:size-12 rounded-2xl bg-white/15 hover:bg-white/25 flex items-center justify-center transition-all group backdrop-blur-sm"
-            title="MediBook Home"
+            title="MediNova Home"
           >
             <HeartPulse className="size-6 text-white group-hover:scale-110 transition-transform" />
           </Link>
         </motion.div>
         <span className="text-[10px] font-bold tracking-wider text-blue-100 uppercase text-center hidden lg:block">
-          MediBook
+          MediNova
         </span>
       </div>
 

@@ -24,7 +24,7 @@ test.describe('Doctor Reviews & Profile E2E Flow', () => {
     expect(docData.bio).toBeDefined();
     expect(docData.qualifications).toBeDefined();
     expect(Array.isArray(docData.reviews)).toBe(true);
-    expect(docData.reviews.some((r: any) => r.patientName === 'Kavita Nair')).toBe(true);
+    expect((docData.reviews as Array<{ patientName: string }>).some((review) => review.patientName === 'Kavita Nair')).toBe(true);
   });
 
   test('Dashboard & Doctor Profile: Diverse reviews and instant update without refresh', async ({ page }) => {

@@ -33,7 +33,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 98,
     nextAvailable: "OCT 14",
     fee: 2500,
-    image: "https://images.unsplash.com/photo-1537368910025-702800a95136?auto=format&fit=crop&q=80&w=400",
+    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
     bio: "Senior Surgical Oncologist with over two decades of surgical excellence in robotic cancer resections, HIPEC procedures, and complex gastrointestinal oncological reconstructions."
   },
   {
@@ -48,7 +48,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 100,
     nextAvailable: "OCT 15",
     fee: 1800,
-    image: "https://images.unsplash.com/photo-1594824436998-058b233a0ec2?auto=format&fit=crop&q=80&w=400",
+    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
     bio: "Pioneering clinical radiation oncologist specializing in precision stereotactic body radiotherapy (SBRT), CyberKnife robotic radiosurgery, and proton beam therapy planning."
   },
   {

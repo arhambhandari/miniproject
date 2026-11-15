@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('Homepage loads correctly', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveTitle(/MediBook/);
+  await expect(page).toHaveTitle(/MediNova/);
   await expect(page.getByText('Find & Book the')).toBeVisible();
 });
 

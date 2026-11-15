@@ -4,11 +4,13 @@ type CacheEntry<T> = {
   ttl: number; // in milliseconds
 };
 
+type CacheEntryValue = CacheEntry<unknown>;
+
 const globalForCache = globalThis as unknown as {
-  appCacheStore: Map<string, CacheEntry<any>> | undefined;
+  appCacheStore: Map<string, CacheEntryValue> | undefined;
 };
 
-const cacheStore = globalForCache.appCacheStore ?? new Map<string, CacheEntry<any>>();
+const cacheStore = globalForCache.appCacheStore ?? new Map<string, CacheEntryValue>();
 if (process.env.NODE_ENV !== "production") {
   globalForCache.appCacheStore = cacheStore;
 }

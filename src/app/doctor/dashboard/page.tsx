@@ -37,12 +37,53 @@ import { DoctorSidebar } from "@/components/doctor/DoctorSidebar";
 import { DoctorTopBar } from "@/components/doctor/DoctorTopBar";
 import { DoctorWelcomeBanner } from "@/components/doctor/DoctorWelcomeBanner";
 import { DoctorStatCards } from "@/components/doctor/DoctorStatCards";
-import { DoctorPatientCareModal } from "@/components/doctor/DoctorPatientCareModal";
+import { DoctorPatientCareModal, type DoctorPatient } from "@/components/doctor/DoctorPatientCareModal";
 import { DoctorRevenueModal } from "@/components/doctor/DoctorRevenueModal";
 import { DoctorNotificationsDrawer } from "@/components/doctor/DoctorNotificationsDrawer";
 import { DoctorProfileEditor } from "@/components/doctor/DoctorProfileEditor";
 import { DoctorOPDQueueConsole } from "@/components/doctor/DoctorOPDQueueConsole";
 import { AmbientBackgroundGlow } from "@/components/ui/AmbientBackgroundGlow";
+
+interface DoctorProfile {
+  name: string;
+  specialization: string;
+  qualifications: string;
+  experience: number;
+  hospitalName: string;
+  roomNumber?: string;
+  contactNumber: string;
+  fee: number;
+  bio: string;
+  nextAvailable: string;
+  email?: string;
+}
+
+interface DoctorAppointment {
+  id: string;
+  doctorId: string;
+  doctorName: string;
+  patientId: string;
+  patientUserId?: string;
+  patientName: string;
+  patientEmail?: string;
+  condition?: string;
+  specialty?: string;
+  status: string;
+  fee: string | number;
+  paymentStatus?: string;
+  tokenNumber?: string;
+  roomNumber?: string;
+  date?: string;
+  time?: string;
+}
+
+interface DoctorChatMessage {
+  id?: string;
+  senderRole?: string;
+  isMe?: boolean;
+  content: string;
+  time?: string;
+}
 
 export default function DoctorDashboardPage() {
   const router = useRouter();
@@ -62,7 +103,7 @@ export default function DoctorDashboardPage() {
   const [specialization, setSpecialization] = useState<string>("Specialist Physician");
   const [hospitalName, setHospitalName] = useState<string>("Apollo Specialty Hospital, Mumbai");
   const [consultationFee, setConsultationFee] = useState<number>(2000);
-  const [doctorProfile, setDoctorProfile] = useState<any>({
+  const [doctorProfile, setDoctorProfile] = useState<DoctorProfile>({
     name: "Doctor",
     specialization: "Specialist Physician",
     qualifications: "MBBS, MD",
@@ -78,57 +119,19 @@ export default function DoctorDashboardPage() {
   const [loading, setLoading] = useState<boolean>(true);
 
   // Appointments & Patients state
-  const [appointments, setAppointments] = useState<any[]>([]);
-  const [patients, setPatients] = useState<any[]>([]);
+  const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
+  const [patients, setPatients] = useState<DoctorPatient[]>([]);
   const [patientsLoading, setPatientsLoading] = useState<boolean>(true);
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Patient Care Modal State
-  const [selectedCarePatient, setSelectedCarePatient] = useState<any | null>(null);
+  const [selectedCarePatient, setSelectedCarePatient] = useState<DoctorPatient | null>(null);
 
   // Chat Tab State
   const [selectedChatPatientId, setSelectedChatPatientId] = useState<string | null>(null);
-  const [chatMessages, setChatMessages] = useState<any[]>([]);
+  const [chatMessages, setChatMessages] = useState<DoctorChatMessage[]>([]);
   const [chatInput, setChatInput] = useState<string>("");
   const [chatSending, setChatSending] = useState<boolean>(false);
-
-  // Load Session and verify DOCTOR role
-  useEffect(() => {
-    let isMounted = true;
-    const controller = new AbortController();
-
-    fetch("/api/auth/session", { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) return null;
-        return res.json();
-      })
-      .then((data) => {
-        if (!isMounted) return;
-        if (!data?.user) {
-          router.replace("/login");
-          return;
-        }
-        if (data.user.role === "PATIENT") {
-          router.replace("/dashboard");
-          return;
-        }
-        if (data.user.name) setDoctorName(data.user.name);
-        if (data.user.email) setDoctorEmail(data.user.email);
-      })
-      .catch((err) => {
-        if (err?.name === "AbortError") return;
-        console.warn("Session verification warning:", err?.message || err);
-      });
-
-    loadDoctorProfile(controller.signal);
-    loadAppointments(controller.signal);
-    loadPatients(controller.signal);
-
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [router]);
 
   const loadDoctorProfile = (signal?: AbortSignal) => {
     fetch("/api/doctor/profile", { signal })
@@ -175,7 +178,6 @@ export default function DoctorDashboardPage() {
   };
 
   const loadPatients = (signal?: AbortSignal) => {
-    setPatientsLoading(true);
     fetch("/api/doctor/patients", { signal })
       .then((res) => {
         if (!res.ok) return { patients: [] };
@@ -196,6 +198,41 @@ export default function DoctorDashboardPage() {
         setPatientsLoading(false);
       });
   };
+
+  // Load Session and verify DOCTOR role.
+  useEffect(() => {
+    let isMounted = true;
+    const controller = new AbortController();
+
+    fetch("/api/auth/session", { signal: controller.signal })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!isMounted) return;
+        if (!data?.user) {
+          router.replace("/login");
+          return;
+        }
+        if (data.user.role === "PATIENT") {
+          router.replace("/dashboard");
+          return;
+        }
+        if (data.user.name) setDoctorName(data.user.name);
+        if (data.user.email) setDoctorEmail(data.user.email);
+      })
+      .catch((err) => {
+        if (err?.name === "AbortError") return;
+        console.warn("Session verification warning:", err?.message || err);
+      });
+
+    loadDoctorProfile(controller.signal);
+    loadAppointments(controller.signal);
+    loadPatients(controller.signal);
+
+    return () => {
+      isMounted = false;
+      controller.abort();
+    };
+  }, [router]);
 
   // Appointment status handler
   const handleStatusChange = async (id: string, newStatus: string) => {
@@ -241,9 +278,12 @@ export default function DoctorDashboardPage() {
 
   useEffect(() => {
     if (activeTab === "chat" && activeChatPatient?.userId) {
-      fetchChatMessages();
+      const initialFetch = window.setTimeout(() => void fetchChatMessages(), 0);
       const interval = setInterval(fetchChatMessages, 3500);
-      return () => clearInterval(interval);
+      return () => {
+        window.clearTimeout(initialFetch);
+        clearInterval(interval);
+      };
     }
   }, [activeTab, activeChatPatient?.userId]);
 
@@ -377,7 +417,7 @@ export default function DoctorDashboardPage() {
                 <div className="space-y-6">
                   <div className="flex items-center justify-between">
                     <span className="font-extrabold text-lg text-slate-900 dark:text-white flex items-center gap-2">
-                      <Stethoscope className="size-5 text-blue-600" /> MediBook
+                      <Stethoscope className="size-5 text-blue-600" /> MediNova
                     </span>
                     <button
                       onClick={() => setMobileMenuOpen(false)}
@@ -643,7 +683,7 @@ export default function DoctorDashboardPage() {
                         patientId: app.patientId,
                         userId: app.patientUserId,
                         name: app.patientName,
-                        email: app.patientEmail,
+                        email: app.patientEmail || "",
                         latestCondition: app.condition,
                       };
 

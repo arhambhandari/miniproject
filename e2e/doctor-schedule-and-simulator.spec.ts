@@ -84,7 +84,7 @@ test.describe('Doctor Schedule & WhatsApp/SMS Health Notification Simulator', ()
     await expect(pushBanner.getByText(/Apollo Hospitals/i)).toBeVisible();
 
     // 8. Verify WhatsApp chat bubble contains medication reminder and interactive action button
-    await expect(page.getByText(/MediBook Daily Medication Alert/i)).toBeVisible({ timeout: 8000 });
+    await expect(page.getByText(/MediNova Daily Medication Alert/i)).toBeVisible({ timeout: 8000 });
     const markDoseBtn = page.getByRole('button', { name: /Mark Dose as Taken/i }).first();
     await expect(markDoseBtn).toBeVisible();
 

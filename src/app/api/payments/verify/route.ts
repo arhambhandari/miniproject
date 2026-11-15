@@ -1,13 +1,23 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import { getErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { isNonEmptyString, isOptionalString, readJsonObject } from "@/lib/validation";
 
 export async function POST(req: Request) {
   try {
-    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointmentId } = await req.json();
+    const body = await readJsonObject(req);
 
-    if (!razorpay_order_id || !razorpay_payment_id) {
+    if (!body) {
+      return NextResponse.json({ error: "Invalid payment verification request" }, { status: 400 });
+    }
+
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointmentId } = body;
+    if (!isNonEmptyString(razorpay_order_id) || !isNonEmptyString(razorpay_payment_id)) {
       return NextResponse.json({ error: "Missing payment verification parameters" }, { status: 400 });
+    }
+    if (!isOptionalString(razorpay_signature) || !isOptionalString(appointmentId)) {
+      return NextResponse.json({ error: "Invalid payment verification parameters" }, { status: 400 });
     }
 
     const keySecret = process.env.RAZORPAY_KEY_SECRET;
@@ -61,10 +71,10 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ verified: true, isSimulated });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Payment verification error:", error);
     return NextResponse.json(
-      { error: error?.message || "Payment verification failed" },
+      { error: getErrorMessage(error, "Payment verification failed") },
       { status: 500 }
     );
   }

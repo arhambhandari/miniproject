@@ -1,3 +1,74 @@
+export interface RazorpayOrder {
+  id: string;
+  amount: number;
+  currency?: string;
+  key_id?: string;
+  isSimulated?: boolean;
+}
+
+export interface RazorpayPaymentResponse {
+  razorpay_order_id: string;
+  razorpay_payment_id: string;
+  razorpay_signature: string;
+}
+
+export interface RazorpayOptions {
+  key?: string;
+  amount: number;
+  currency: string;
+  name: string;
+  description: string;
+  order_id: string;
+  handler: (response: RazorpayPaymentResponse) => void | Promise<void>;
+  prefill: {
+    name: string;
+    email: string;
+    contact: string;
+    method: "upi" | "card";
+    vpa?: string;
+  };
+  theme: { color: string };
+  modal: { ondismiss: () => void };
+}
+
+export interface RazorpayFailureResponse {
+  error?: { description?: string };
+}
+
+export interface RazorpayInstance {
+  on: (event: "payment.failed", handler: (response: RazorpayFailureResponse) => void) => void;
+  open: () => void;
+}
+
+declare global {
+  interface Window {
+    Razorpay?: new (options: RazorpayOptions) => RazorpayInstance;
+  }
+}
+
+export function isRazorpayOrder(value: unknown): value is RazorpayOrder {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "amount" in value &&
+    typeof value.amount === "number"
+  );
+}
+
+export function getRazorpayError(value: unknown, fallback: string): string {
+  if (
+    typeof value === "object" &&
+    value !== null &&
+    "error" in value &&
+    typeof value.error === "string"
+  ) {
+    return value.error;
+  }
+  return fallback;
+}
+
 /**
  * Helper to dynamically load the Razorpay Checkout script on demand.
  * Avoids errors where window.Razorpay is called before script finishes loading.
@@ -9,7 +80,7 @@ export function loadRazorpayScript(): Promise<boolean> {
       return;
     }
 
-    if ((window as any).Razorpay) {
+    if (window.Razorpay) {
       resolve(true);
       return;
     }

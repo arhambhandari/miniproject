@@ -47,7 +47,7 @@ export function DoctorTopBar({
         )}
         <span className="font-bold text-lg text-slate-900 dark:text-white flex items-center gap-1.5">
           <Stethoscope className="size-5 text-blue-600" />
-          MediBook
+          MediNova
         </span>
       </div>
 

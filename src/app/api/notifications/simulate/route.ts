@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { getErrorMessage } from "@/lib/errors";
 
 export const dynamic = "force-dynamic";
 
@@ -31,9 +32,9 @@ export async function POST(req: Request) {
     if (channel === "WHATSAPP") {
       switch (template) {
         case "MEDICATION_REMINDER":
-          previewTitle = "⏰ Apollo Pharmacy & MediBook";
+          previewTitle = "⏰ Apollo Pharmacy & MediNova";
           previewBody = `Dose Reminder: Time to take your ${medicationName} scheduled for ${medicationTime}.`;
-          messageContent = `*MediBook Daily Medication Alert* 💊\n\nHello ${patientName},\nThis is a clinical reminder from *Apollo Hospital Pharmacy*.\n\n🔔 *Dose Due:* ${medicationName}\n⏰ *Scheduled:* ${medicationTime}\n📋 *Instructions:* Take 1 tablet with warm water post-dinner.\n\n_Please log your intake in the MediBook portal to keep your adherence score optimal._`;
+          messageContent = `*MediNova Daily Medication Alert* 💊\n\nHello ${patientName},\nThis is a clinical reminder from *Apollo Hospital Pharmacy*.\n\n🔔 *Dose Due:* ${medicationName}\n⏰ *Scheduled:* ${medicationTime}\n📋 *Instructions:* Take 1 tablet with warm water post-dinner.\n\n_Please log your intake in the MediNova portal to keep your adherence score optimal._`;
           break;
 
         case "DOCTOR_DELAY":
@@ -45,7 +46,7 @@ export async function POST(req: Request) {
         case "LAB_READY":
           previewTitle = "📄 Apollo Diagnostics";
           previewBody = "Your Complete Blood Count (CBC) report is ready for download.";
-          messageContent = `*Diagnostic Report Ready* 🔬\n\nDear ${patientName},\nYour pathology lab results (*CBC & Lipid Profile*) have been verified by the Chief Pathologist.\n\nView or download your digital report directly in your MediBook Medical Records.`;
+          messageContent = `*Diagnostic Report Ready* 🔬\n\nDear ${patientName},\nYour pathology lab results (*CBC & Lipid Profile*) have been verified by the Chief Pathologist.\n\nView or download your digital report directly in your MediNova Medical Records.`;
           break;
 
         case "APPOINTMENT_PASS":
@@ -60,8 +61,8 @@ export async function POST(req: Request) {
       switch (template) {
         case "MEDICATION_REMINDER":
           previewTitle = "VK-APOLLO";
-          previewBody = `MediBook Alert: Take ${medicationName} at ${medicationTime}. Reply 1 if taken.`;
-          messageContent = `[Apollo MediBook] Reminder: Take ${medicationName} at ${medicationTime}. Post-dinner with water. Track adherence: https://medibook.in/m/adh`;
+          previewBody = `MediNova Alert: Take ${medicationName} at ${medicationTime}. Reply 1 if taken.`;
+          messageContent = `[Apollo MediNova] Reminder: Take ${medicationName} at ${medicationTime}. Post-dinner with water. Track adherence: https://medinova.in/m/adh`;
           break;
 
         case "DOCTOR_DELAY":
@@ -74,7 +75,7 @@ export async function POST(req: Request) {
         default:
           previewTitle = "VM-MEDIBK";
           previewBody = `Booking Confirmed: Token ${tokenNumber} with ${doctorName} at ${hospitalName}.`;
-          messageContent = `[MediBook] Confirmed: Token ${tokenNumber} with ${doctorName} on ${appointmentTime} at ${hospitalName}, ${roomNumber}. E-Pass: https://medibook.in/p/98412`;
+          messageContent = `[MediNova] Confirmed: Token ${tokenNumber} with ${doctorName} on ${appointmentTime} at ${hospitalName}, ${roomNumber}. E-Pass: https://medinova.in/p/98412`;
           break;
       }
     }
@@ -91,8 +92,8 @@ export async function POST(req: Request) {
       messageContent,
       deliveryStatus: "DELIVERED",
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("Simulation dispatch error:", err);
-    return NextResponse.json({ error: err?.message || "Failed to simulate message" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to simulate message") }, { status: 500 });
   }
 }

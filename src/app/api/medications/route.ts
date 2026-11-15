@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
+import { getErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { isNonEmptyString, isOptionalString, readJsonObject } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -92,9 +95,9 @@ export async function GET(req: Request) {
       { medications: formatted },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET /api/medications error:", err);
-    return NextResponse.json({ error: err.message || "Failed to fetch medications" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to fetch medications") }, { status: 500 });
   }
 }
 
@@ -108,13 +111,17 @@ export async function POST(req: Request) {
 
     const doctorProfile = await prisma.doctorProfile.findUnique({
       where: { userId: session.user.id },
+      include: { user: { select: { name: true } } },
     });
 
     if (!doctorProfile) {
       return NextResponse.json({ error: "Only verified doctors can prescribe medication." }, { status: 403 });
     }
 
-    const body = await req.json();
+    const body = await readJsonObject(req);
+    if (!body) {
+      return NextResponse.json({ error: "Invalid prescription request" }, { status: 400 });
+    }
     const {
       patientId,
       appointmentId,
@@ -126,8 +133,18 @@ export async function POST(req: Request) {
       daysRemaining = 14,
     } = body;
 
-    if (!patientId || !name || !dosage) {
+    if (!isNonEmptyString(patientId) || !isNonEmptyString(name) || !isNonEmptyString(dosage)) {
       return NextResponse.json({ error: "Missing required prescription details: patientId, name, dosage" }, { status: 400 });
+    }
+    if (
+      !isOptionalString(appointmentId) ||
+      !isOptionalString(instruction) ||
+      (timeSlot !== undefined && typeof timeSlot !== "string") ||
+      (scheduledTime !== undefined && typeof scheduledTime !== "string") ||
+      ((typeof daysRemaining !== "string" && typeof daysRemaining !== "number") ||
+        !Number.isFinite(Number(daysRemaining)))
+    ) {
+      return NextResponse.json({ error: "Invalid prescription details" }, { status: 400 });
     }
 
     const medication = await prisma.medication.create({
@@ -138,15 +155,14 @@ export async function POST(req: Request) {
         name: name.trim(),
         dosage: dosage.trim(),
         instruction: (instruction || "Take as directed by doctor").trim(),
-        timeSlot: ["Morning", "Afternoon", "Night"].includes(timeSlot) ? timeSlot : "Morning",
+        timeSlot:
+          typeof timeSlot === "string" &&
+          ["Morning", "Afternoon", "Night"].includes(timeSlot)
+            ? timeSlot
+            : "Morning",
         scheduledTime: scheduledTime || "08:00 AM",
         daysRemaining: Number(daysRemaining) || 14,
         taken: false,
-      },
-      include: {
-        doctor: {
-          include: { user: { select: { name: true } } },
-        },
       },
     });
 
@@ -162,14 +178,14 @@ export async function POST(req: Request) {
           scheduledTime: medication.scheduledTime,
           daysRemaining: medication.daysRemaining,
           taken: medication.taken,
-          doctorName: medication.doctor?.user?.name || "Dr. Specialist",
+          doctorName: doctorProfile.user?.name || "Dr. Specialist",
         },
       },
       { status: 201 }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST /api/medications error:", err);
-    return NextResponse.json({ error: err.message || "Failed to prescribe medication" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to prescribe medication") }, { status: 500 });
   }
 }
 
@@ -181,14 +197,28 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = await readJsonObject(req);
+    if (!body) {
+      return NextResponse.json({ error: "Invalid medication update request" }, { status: 400 });
+    }
     const { id, taken, daysRemaining, instruction, dosage } = body;
 
-    if (!id) {
+    if (!isNonEmptyString(id)) {
       return NextResponse.json({ error: "Medication ID is required" }, { status: 400 });
     }
+    if (
+      (taken !== undefined && typeof taken !== "boolean") ||
+      (daysRemaining !== undefined &&
+        ((typeof daysRemaining !== "string" && typeof daysRemaining !== "number") ||
+          !Number.isFinite(Number(daysRemaining)))) ||
+      !isOptionalString(instruction) ||
+      !isOptionalString(dosage) ||
+      !isOptionalString(body.takenAt)
+    ) {
+      return NextResponse.json({ error: "Invalid medication update details" }, { status: 400 });
+    }
 
-    const updateData: any = {};
+    const updateData: Prisma.MedicationUpdateInput = {};
     if (typeof taken === "boolean") {
       updateData.taken = taken;
       updateData.takenAt = taken
@@ -205,9 +235,9 @@ export async function PATCH(req: Request) {
     });
 
     return NextResponse.json({ success: true, medication: updated });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("PATCH /api/medications error:", err);
-    return NextResponse.json({ error: err.message || "Failed to update medication" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to update medication") }, { status: 500 });
   }
 }
 
@@ -228,8 +258,8 @@ export async function DELETE(req: Request) {
 
     await prisma.medication.delete({ where: { id } });
     return NextResponse.json({ success: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("DELETE /api/medications error:", err);
-    return NextResponse.json({ error: err.message || "Failed to delete medication" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to delete medication") }, { status: 500 });
   }
 }

@@ -4,12 +4,13 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { LanguageProvider } from "@/components/LanguageContext";
+import { PageMotion } from "@/components/ui/PageMotion";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-sans" });
 const jakarta = Plus_Jakarta_Sans({ subsets: ["latin"], variable: "--font-display" });
 
 export const metadata: Metadata = {
-  title: "MediBook — Book trusted doctors online in minutes",
+  title: "MediNova — Book trusted doctors online in minutes",
   description: "Search verified specialists by name, specialty or availability, book an appointment instantly and message your doctor from one secure dashboard.",
 };
 
@@ -28,7 +29,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <LanguageProvider>
-            {children}
+            <PageMotion>{children}</PageMotion>
             <Toaster position="top-right" richColors />
           </LanguageProvider>
         </ThemeProvider>

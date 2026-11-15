@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { getErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -41,8 +42,30 @@ export async function GET() {
       orderBy: { createdAt: "desc" },
     });
 
+    type AppointmentRecord = (typeof appointments)[number];
+    type PatientSummary = {
+      patientId: string;
+      userId: string | undefined;
+      name: string;
+      email: string;
+      image: string | null | undefined;
+      contactNumber: string;
+      latestCondition: string;
+      appointments: Array<{
+        id: string;
+        date: string;
+        time: string;
+        status: string;
+        disease: string | null;
+        fee: number;
+        paymentStatus: string;
+      }>;
+      medications: AppointmentRecord["patient"]["medications"];
+      clinicalRecords: AppointmentRecord["patient"]["clinicalRecords"];
+    };
+
     // Group by unique patient
-    const patientMap = new Map<string, any>();
+    const patientMap = new Map<string, PatientSummary>();
 
     for (const appt of appointments) {
       const p = appt.patient;
@@ -64,6 +87,8 @@ export async function GET() {
       }
 
       const existing = patientMap.get(p.id);
+      if (!existing) continue;
+
       existing.appointments.push({
         id: appt.id,
         date: appt.date,
@@ -81,8 +106,8 @@ export async function GET() {
       { patients, totalPatients: patients.length },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET /api/doctor/patients error:", err);
-    return NextResponse.json({ error: err.message || "Failed to fetch doctor patients" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to fetch doctor patients") }, { status: 500 });
   }
 }

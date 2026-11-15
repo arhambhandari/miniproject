@@ -28,18 +28,30 @@ interface MedicationInput {
   daysRemaining: number;
 }
 
+export interface DoctorPatient {
+  patientId: string;
+  userId?: string;
+  name: string;
+  email: string;
+  contactNumber?: string;
+  latestCondition?: string;
+  appointments?: unknown[];
+  medications?: unknown[];
+  clinicalRecords?: Array<{
+    diagnosis?: string;
+    treatmentPlan?: string;
+    notes?: string;
+    bloodPressure?: string;
+    heartRate?: string;
+    bloodSugar?: string;
+    spo2?: string;
+    weight?: string;
+    temperature?: string;
+  }>;
+}
+
 interface DoctorPatientCareModalProps {
-  patient: {
-    patientId: string;
-    userId?: string;
-    name: string;
-    email: string;
-    contactNumber?: string;
-    latestCondition?: string;
-    appointments?: any[];
-    medications?: any[];
-    clinicalRecords?: any[];
-  };
+  patient: DoctorPatient;
   onClose: () => void;
   onSuccess?: () => void;
 }

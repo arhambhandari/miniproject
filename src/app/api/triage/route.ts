@@ -2,14 +2,26 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { evaluateClinicalTriage, type TriageEvaluationInput } from "@/lib/triageRules";
 import { MOCK_DOCTORS } from "@/lib/data";
+import type { Doctor } from "@/types";
+import { readJsonObject } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
+function isTriageEvaluationInput(value: Record<string, unknown>): value is Record<string, unknown> & TriageEvaluationInput {
+  return (
+    Array.isArray(value.symptoms) &&
+    value.symptoms.every((symptom) => typeof symptom === "string") &&
+    typeof value.duration === "string" &&
+    typeof value.severity === "string" &&
+    (value.notes === undefined || typeof value.notes === "string")
+  );
+}
+
 export async function POST(req: Request) {
   try {
-    const body: TriageEvaluationInput = await req.json();
+    const body = await readJsonObject(req);
 
-    if (!body.symptoms || !Array.isArray(body.symptoms) || body.symptoms.length === 0) {
+    if (!body || !isTriageEvaluationInput(body) || body.symptoms.length === 0) {
       return NextResponse.json(
         { error: "Please select at least one primary symptom for triage analysis." },
         { status: 400 }
@@ -20,7 +32,7 @@ export async function POST(req: Request) {
     const triageResult = evaluateClinicalTriage(body);
 
     // 2. Query matching specialist doctors from Database
-    let matchingDoctors: any[] = [];
+    let matchingDoctors: Doctor[] = [];
 
     try {
       const dbDoctors = await prisma.doctorProfile.findMany({
@@ -48,7 +60,7 @@ export async function POST(req: Request) {
           const realSatisfaction =
             doc.reviews && doc.reviews.length > 0
               ? Math.round(
-                  (doc.reviews.reduce((acc: number, r: any) => acc + r.rating, 0) /
+                  (doc.reviews.reduce((acc, review) => acc + review.rating, 0) /
                     (doc.reviews.length * 5)) *
                     100
                 )
@@ -62,7 +74,7 @@ export async function POST(req: Request) {
             fee: doc.fee,
             hospitalName: doc.hospitalName,
             nextAvailable: doc.nextAvailable || "Today, 10:30 AM",
-            bio: doc.bio,
+            bio: doc.bio ?? undefined,
             qualifications: doc.qualifications,
             user: {
               name: doc.user.name || "Dr. Specialist",

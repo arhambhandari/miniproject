@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useLanguage } from "../LanguageContext";
 import Image from "next/image";
 import { Search, MapPin, CheckCircle2, ShieldCheck } from "lucide-react";
@@ -8,17 +8,37 @@ import { Button } from "@/components/ui/Button";
 import type { Doctor } from "@/types";
 
 interface HeroProps {
+  doctors?: Doctor[];
   onBook?: (doctor: Doctor) => void;
   searchQuery?: string;
   setSearchQuery?: (q: string) => void;
 }
 
-export function Hero({ onBook, searchQuery: externalSearch, setSearchQuery: setExternalSearch }: HeroProps) {
+export function Hero({
+  doctors = [],
+  onBook,
+  searchQuery: externalSearch,
+  setSearchQuery: setExternalSearch,
+}: HeroProps) {
   const [internalSearch, setInternalSearch] = useState("");
   const { t } = useLanguage();
 
   const currentSearch = externalSearch !== undefined ? externalSearch : internalSearch;
   const updateSearch = setExternalSearch || setInternalSearch;
+  const doctorSuggestions = useMemo(() => {
+    const query = currentSearch.trim().toLocaleLowerCase();
+    if (!query || !onBook) return [];
+
+    return doctors
+      .filter((doctor) =>
+        [
+          doctor.user.name,
+          doctor.specialization,
+          doctor.hospitalName ?? "",
+        ].some((value) => value.toLocaleLowerCase().includes(query))
+      )
+      .slice(0, 5);
+  }, [currentSearch, doctors, onBook]);
 
   const handleSearchSubmit = (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -79,12 +99,49 @@ export function Hero({ onBook, searchQuery: externalSearch, setSearchQuery: setE
             <div className="flex-1 relative group">
               <Search className="absolute left-3.5 top-3.5 size-5 text-slate-400 group-focus-within:text-blue-600 transition-colors" />
               <input
+                id="doctor-search"
                 type="text"
+                role="combobox"
+                aria-autocomplete="list"
+                aria-expanded={doctorSuggestions.length > 0}
+                aria-controls="doctor-search-suggestions"
                 placeholder={t('search_placeholder')}
                 className="w-full h-12 pl-10 pr-4 rounded-xl bg-slate-50 dark:bg-slate-900 border-none outline-none focus:ring-2 focus:ring-blue-500 text-slate-900 dark:text-white transition-all text-sm"
                 value={currentSearch}
                 onChange={e => updateSearch(e.target.value)}
               />
+              {doctorSuggestions.length > 0 && (
+                <div
+                  id="doctor-search-suggestions"
+                  role="listbox"
+                  aria-label="Matching doctors"
+                  className="absolute left-0 right-0 top-full z-30 mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-800"
+                >
+                  {doctorSuggestions.map((doctor) => (
+                    <button
+                      key={doctor.id}
+                      type="button"
+                      role="option"
+                      aria-selected={false}
+                      onClick={() => onBook?.(doctor)}
+                      className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left transition-colors hover:bg-blue-50 focus:bg-blue-50 focus:outline-none dark:hover:bg-slate-700 dark:focus:bg-slate-700"
+                    >
+                      <span className="min-w-0">
+                        <span className="block truncate text-sm font-semibold text-slate-900 dark:text-white">
+                          {doctor.user.name}
+                        </span>
+                        <span className="block truncate text-xs text-slate-500 dark:text-slate-400">
+                          {doctor.specialization}
+                          {doctor.hospitalName ? ` · ${doctor.hospitalName}` : ""}
+                        </span>
+                      </span>
+                      <span className="shrink-0 text-xs font-semibold text-blue-600 dark:text-blue-400">
+                        Book
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
             <div className="hidden sm:block w-[1px] bg-slate-200 dark:bg-slate-700 my-2"></div>
             <div className="flex-1 relative group">

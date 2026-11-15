@@ -25,12 +25,14 @@ interface SettingsViewProps {
   onReturnToOverview: () => void;
 }
 
+type SettingsSection = "profile" | "notifications" | "security" | "billing";
+
 export function SettingsView({
   userName = "Rahul Sharma",
   userEmail = "rahul.sharma@example.com",
   onReturnToOverview,
 }: SettingsViewProps) {
-  const [activeSection, setActiveSection] = useState<"profile" | "notifications" | "security" | "billing">("profile");
+  const [activeSection, setActiveSection] = useState<SettingsSection>("profile");
 
   // Form states
   const [name, setName] = useState(userName);
@@ -102,7 +104,7 @@ export function SettingsView({
             return (
               <button
                 key={tab.id}
-                onClick={() => setActiveSection(tab.id as any)}
+                onClick={() => setActiveSection(tab.id as SettingsSection)}
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-xs font-bold transition-all cursor-pointer ${
                   isActive
                     ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
@@ -209,7 +211,7 @@ export function SettingsView({
               <div className="space-y-6">
                 <div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-white">Alerts & Reminders</h3>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">Choose how and when MediBook notifies you about your healthcare.</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Choose how and when MediNova notifies you about your healthcare.</p>
                 </div>
 
                 <div className="space-y-3.5">

@@ -101,7 +101,7 @@ export type ChatAction = {
   doctor?: Doctor;
   emergencyReason?: string;
   triageDisease?: string;
-  data?: any;
+  data?: unknown;
 };
 
 export type ChatMessage = {

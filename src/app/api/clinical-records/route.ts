@@ -1,8 +1,40 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { getErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { isNonEmptyString, isOptionalString, readJsonObject } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
+
+type ClinicalRecordInput = {
+  patientId: string;
+  appointmentId?: string | null;
+  diagnosis?: string | null;
+  treatmentPlan?: string | null;
+  notes?: string | null;
+  bloodPressure?: string | null;
+  heartRate?: string | null;
+  bloodSugar?: string | null;
+  spo2?: string | null;
+  weight?: string | null;
+  temperature?: string | null;
+};
+
+function isClinicalRecordInput(value: Record<string, unknown>): value is Record<string, unknown> & ClinicalRecordInput {
+  return (
+    isNonEmptyString(value.patientId) &&
+    isOptionalString(value.appointmentId) &&
+    isOptionalString(value.diagnosis) &&
+    isOptionalString(value.treatmentPlan) &&
+    isOptionalString(value.notes) &&
+    isOptionalString(value.bloodPressure) &&
+    isOptionalString(value.heartRate) &&
+    isOptionalString(value.bloodSugar) &&
+    isOptionalString(value.spo2) &&
+    isOptionalString(value.weight) &&
+    isOptionalString(value.temperature)
+  );
+}
 
 // GET: Fetch clinical records & recorded vitals
 export async function GET(req: Request) {
@@ -91,9 +123,9 @@ export async function GET(req: Request) {
       },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET /api/clinical-records error:", err);
-    return NextResponse.json({ error: err.message || "Failed to fetch records" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to fetch records") }, { status: 500 });
   }
 }
 
@@ -113,7 +145,10 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Only verified doctors can record clinical data" }, { status: 403 });
     }
 
-    const body = await req.json();
+    const body = await readJsonObject(req);
+    if (!body || !isClinicalRecordInput(body)) {
+      return NextResponse.json({ error: "Invalid clinical record details" }, { status: 400 });
+    }
     const {
       patientId,
       appointmentId,
@@ -127,10 +162,6 @@ export async function POST(req: Request) {
       weight,
       temperature,
     } = body;
-
-    if (!patientId) {
-      return NextResponse.json({ error: "Patient ID is required" }, { status: 400 });
-    }
 
     const record = await prisma.clinicalRecord.create({
       data: {
@@ -153,8 +184,8 @@ export async function POST(req: Request) {
     });
 
     return NextResponse.json({ success: true, record }, { status: 201 });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST /api/clinical-records error:", err);
-    return NextResponse.json({ error: err.message || "Failed to record clinical data" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to record clinical data") }, { status: 500 });
   }
 }

@@ -3,6 +3,7 @@ import nodemailer from "nodemailer";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { queueManager } from "@/lib/queueManager";
+import { isNonEmptyString, isOptionalString, readJsonObject } from "@/lib/validation";
 
 // GET: Fetch appointments for current logged-in user
 export async function GET() {
@@ -74,7 +75,6 @@ export async function GET() {
     }
 
     const formattedAppointments = appointments.map((appt) => {
-      const isDocView = userRole === "DOCTOR";
       const statusNormalized =
         appt.status === "COMPLETED"
           ? "Completed"
@@ -123,11 +123,27 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Please log in to book an appointment" }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = await readJsonObject(req);
+    if (!body) {
+      return NextResponse.json({ error: "Invalid appointment request" }, { status: 400 });
+    }
     const { doctorId, date, startTime, disease, patientContact, email, paymentId, isEmergency } = body;
 
-    if (!doctorId || !date || !startTime) {
+    if (
+      !isNonEmptyString(doctorId) ||
+      !isNonEmptyString(date) ||
+      !isNonEmptyString(startTime)
+    ) {
       return NextResponse.json({ error: "Missing required fields: doctorId, date, and startTime" }, { status: 400 });
+    }
+    if (
+      !isOptionalString(disease) ||
+      !isOptionalString(patientContact) ||
+      !isOptionalString(email) ||
+      !isOptionalString(paymentId) ||
+      (isEmergency !== undefined && typeof isEmergency !== "boolean")
+    ) {
+      return NextResponse.json({ error: "Invalid appointment details" }, { status: 400 });
     }
 
     const normalizedDate = String(date).trim();
@@ -247,14 +263,14 @@ export async function POST(req: Request) {
           timeout: 30000,
         }
       );
-    } catch (txError: any) {
-      if (txError?.message === "SLOT_ALREADY_BOOKED") {
+    } catch (txError: unknown) {
+      if (txError instanceof Error && txError.message === "SLOT_ALREADY_BOOKED") {
         return NextResponse.json(
           { error: `Dr. ${doctor.user.name} is already booked on ${normalizedDate} at ${normalizedStartTime}. Please select another time slot.` },
           { status: 409 }
         );
       }
-      if (txError?.message === "PATIENT_ALREADY_BOOKED") {
+      if (txError instanceof Error && txError.message === "PATIENT_ALREADY_BOOKED") {
         return NextResponse.json(
           { error: `You already have an active consultation booked on ${normalizedDate} at ${normalizedStartTime}.` },
           { status: 409 }
@@ -282,9 +298,9 @@ export async function POST(req: Request) {
       });
 
       const info = await transporter.sendMail({
-        from: '"MediBook" <no-reply@medibook.com>',
+        from: '"MediNova" <no-reply@medibook.com>',
         to: email || session.user.email || "patient@example.com",
-        subject: "Appointment Confirmed - MediBook",
+        subject: "Appointment Confirmed - MediNova",
         html: `
           <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; rounded: 16px;">
             <h2 style="color: #2563eb;">Your Appointment is Confirmed! 🎉</h2>

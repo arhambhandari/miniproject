@@ -17,7 +17,7 @@ test.describe('Razorpay Standard Checkout Test Mode Flow', () => {
     const bookBtn = page.locator('button:has-text("Book Appointment")').first();
     await bookBtn.click();
 
-    // 3. Verify MediBook Booking Modal opens
+    // 3. Verify MediNova Booking Modal opens
     await expect(page.getByText('Schedule Consultation')).toBeVisible({ timeout: 10000 });
 
     // Select Day+4 and 05:00 PM slot to prevent slot collision
@@ -82,7 +82,7 @@ test.describe('Razorpay Standard Checkout Test Mode Flow', () => {
     // 6. Verify Bank 3D Secure Sandbox OTP Screen
     await expect(page.getByTestId('rzp-otp-sandbox')).toBeVisible({ timeout: 10000 });
     await expect(page.getByText('Enter 6-Digit Bank OTP')).toBeVisible();
-    await expect(page.getByText(/Your MediBook OTP is 123456/i)).toBeVisible();
+    await expect(page.getByText(/Your MediNova OTP is 123456/i)).toBeVisible();
     await page.waitForTimeout(500);
 
     // Take screenshot of Razorpay 3D Secure Sandbox OTP screen
@@ -105,14 +105,14 @@ test.describe('Razorpay Standard Checkout Test Mode Flow', () => {
       path: '/Users/apple/.gemini/antigravity/brain/783b71d3-6110-4e29-a4eb-2f2899ecfde5/razorpay_payment_success.png',
     });
 
-    // 8. Verify appointment confirmed screen in MediBook with Payment Chime indicator
+    // 8. Verify appointment confirmed screen in MediNova with Payment Chime indicator
     await expect(page.getByText('Your Appointment is Scheduled!')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText('Booking Confirmed')).toBeVisible();
     await expect(page.getByText('Hear Payment Chime 🔔')).toBeVisible();
     await expect(page.getByText('Transaction ID:')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Return to Dashboard' })).toBeVisible();
 
-    // Take screenshot of MediBook Confirmation Screen with Chime indicator
+    // Take screenshot of MediNova Confirmation Screen with Chime indicator
     await page.screenshot({
       path: '/Users/apple/.gemini/antigravity/brain/783b71d3-6110-4e29-a4eb-2f2899ecfde5/razorpay_booking_confirmed.png',
     });

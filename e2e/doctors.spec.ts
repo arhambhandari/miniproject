@@ -7,8 +7,16 @@ test('Doctors API returns seeded doctors from database', async ({ request }) => 
   expect(Array.isArray(doctors)).toBeTruthy();
   expect(doctors.length).toBeGreaterThanOrEqual(6);
 
-  const aarav = doctors.find((d: any) => d.user.name.includes("Aarav Mehta"));
+  const aarav = (doctors as Array<{
+    id: string;
+    specialization: string;
+    fee: number;
+    user: { name: string };
+  }>).find((doctor) =>
+    doctor.user.name.includes("Aarav Mehta")
+  );
   expect(aarav).toBeDefined();
+  if (!aarav) throw new Error("Expected Dr. Aarav Mehta to be returned by the doctors API.");
   expect(aarav.specialization).toBe("NEURO-ONCOLOGY");
   expect(aarav.fee).toBeGreaterThanOrEqual(2000);
 });

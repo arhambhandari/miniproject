@@ -20,16 +20,79 @@ import {
 import { useParams } from "next/navigation";
 import { toast } from "sonner";
 
+interface DoctorReview {
+  id: string;
+  author: string;
+  rating: number;
+  date: string;
+  text: string;
+}
+
+interface DoctorProfile {
+  id: string;
+  name: string;
+  image: string | null;
+  specialty: string;
+  qualifications: string;
+  hospital: string;
+  contactNumber: string;
+  location: string;
+  rating: string | null;
+  satisfaction: number | null;
+  experience: number;
+  fee: string;
+  about: string;
+  nextAvailable: string;
+}
+
+interface DoctorResponse {
+  error?: string;
+  id: string;
+  hospitalName?: string | null;
+  reviews?: Array<{
+    id: string;
+    patientName?: string | null;
+    rating: number;
+    createdAt?: string | null;
+    comment?: string | null;
+  }>;
+  user?: { name?: string | null; image?: string | null };
+  specialization?: string | null;
+  qualifications?: string | null;
+  contactNumber?: string | null;
+  experience?: number | null;
+  fee?: number | null;
+  bio?: string | null;
+  nextAvailable?: string | null;
+}
+
+function isDoctorReview(value: unknown): value is DoctorReview {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "id" in value &&
+    typeof value.id === "string" &&
+    "author" in value &&
+    typeof value.author === "string" &&
+    "rating" in value &&
+    typeof value.rating === "number" &&
+    "date" in value &&
+    typeof value.date === "string" &&
+    "text" in value &&
+    typeof value.text === "string"
+  );
+}
+
 export default function DoctorProfilePage() {
   const params = useParams();
   const doctorId = params?.id as string;
   
-  const [doctor, setDoctor] = useState<any>(null);
+  const [doctor, setDoctor] = useState<DoctorProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [reviewerName, setReviewerName] = useState("Rahul Sharma");
   const [reviewRating, setReviewRating] = useState(5);
   const [reviewText, setReviewText] = useState("");
-  const [reviews, setReviews] = useState<any[]>([]);
+  const [reviews, setReviews] = useState<DoctorReview[]>([]);
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
@@ -38,7 +101,7 @@ export default function DoctorProfilePage() {
     // Fetch live doctor data with cache busting
     fetch(`/api/doctors/${doctorId}?t=${Date.now()}`, { cache: "no-store" })
       .then(res => res.json())
-      .then(data => {
+      .then((data: DoctorResponse) => {
         if (!data.error) {
           const loc = data.hospitalName?.includes("Mumbai") 
             ? "Mumbai, Maharashtra" 
@@ -48,30 +111,33 @@ export default function DoctorProfilePage() {
             ? "Gurugram, NCR"
             : "New Delhi, Delhi";
 
-          let serverReviews: any[] = [];
+          let serverReviews: DoctorReview[] = [];
           if (Array.isArray(data.reviews)) {
-            serverReviews = data.reviews.map((r: any) => ({
-              id: r.id,
-              author: r.patientName || "Verified Patient",
-              rating: r.rating,
-              date: r.createdAt 
-                ? new Date(r.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+            serverReviews = data.reviews.map((review) => ({
+              id: review.id,
+              author: review.patientName || "Verified Patient",
+              rating: review.rating,
+              date: review.createdAt
+                ? new Date(review.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
                 : "Recent Visit",
-              text: r.comment || "",
+              text: review.comment || "",
             }));
           }
 
           // Merge any recent local reviews immediately so user sees their review without needing to refresh
           try {
-            const localSaved = JSON.parse(localStorage.getItem(`medibook_reviews_${doctorId}`) || "[]");
-            if (Array.isArray(localSaved) && localSaved.length > 0) {
+            const localSaved: unknown = JSON.parse(localStorage.getItem(`medibook_reviews_${doctorId}`) || "[]");
+            if (Array.isArray(localSaved)) {
+              const validLocalReviews = localSaved.filter(isDoctorReview);
               const serverComments = new Set(serverReviews.map(r => r.text?.trim()));
               const serverIds = new Set(serverReviews.map(r => r.id));
-              const freshLocals = localSaved.filter((lr: any) => !serverIds.has(lr.id) && !serverComments.has(lr.text?.trim()));
+              const freshLocals = validLocalReviews.filter(
+                (review) => !serverIds.has(review.id) && !serverComments.has(review.text.trim())
+              );
               serverReviews = [...freshLocals, ...serverReviews];
             }
-          } catch (e) {
-            console.warn("Local review merge error:", e);
+          } catch (error) {
+            console.warn("Local review merge error:", error);
           }
 
           setReviews(serverReviews);
@@ -108,7 +174,7 @@ export default function DoctorProfilePage() {
     // Fetch user session for name prefill
     fetch("/api/auth/session")
       .then(res => res.json())
-      .then(data => {
+      .then((data: { user?: { name?: string } }) => {
         if (data?.user?.name) {
           setReviewerName(data.user.name);
         }
@@ -155,9 +221,12 @@ export default function DoctorProfilePage() {
 
       // Store in localStorage so it stays immediately visible before/until refresh and across page navigations
       try {
-        const stored = JSON.parse(localStorage.getItem(`medibook_reviews_${doctorId}`) || "[]");
-        localStorage.setItem(`medibook_reviews_${doctorId}`, JSON.stringify([newReview, ...stored]));
-      } catch {}
+        const stored: unknown = JSON.parse(localStorage.getItem(`medibook_reviews_${doctorId}`) || "[]");
+        const storedReviews = Array.isArray(stored) ? stored.filter(isDoctorReview) : [];
+        localStorage.setItem(`medibook_reviews_${doctorId}`, JSON.stringify([newReview, ...storedReviews]));
+      } catch (error) {
+        console.warn("Could not save review locally:", error);
+      }
 
       // Immediately display at the top of the list without needing to refresh
       setReviews((prev) => [newReview, ...prev]);
@@ -166,17 +235,17 @@ export default function DoctorProfilePage() {
       if (doctor) {
         const newTotal = reviews.length + 1;
         const newAvg = ((reviews.reduce((acc, r) => acc + r.rating, 0) + reviewRating) / newTotal).toFixed(1);
-        setDoctor((prev: any) => ({
+        setDoctor((prev) => prev ? ({
           ...prev,
           rating: newAvg,
           satisfaction: Math.min(100, Math.round((Number(newAvg) / 5) * 100)),
-        }));
+        }) : prev);
       }
 
       setReviewText("");
       setReviewRating(5);
-    } catch (err: any) {
-      toast.error(err.message || "Failed to publish review");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to publish review");
     } finally {
       setSubmitting(false);
     }
@@ -239,7 +308,7 @@ export default function DoctorProfilePage() {
               <span className="flex size-8 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-500/30">
                 <HeartPulse className="size-4" />
               </span>
-              <span className="font-bold tracking-tight text-slate-900 dark:text-white text-lg">MediBook</span>
+              <span className="font-bold tracking-tight text-slate-900 dark:text-white text-lg">MediNova</span>
             </Link>
           </div>
 
@@ -496,7 +565,7 @@ export default function DoctorProfilePage() {
                       </div>
                     </div>
                     <p className="text-slate-700 dark:text-slate-300 text-xs sm:text-sm leading-relaxed mt-2 pl-13">
-                      "{review.text}"
+                      &quot;{review.text}&quot;
                     </p>
                   </div>
                 ))}

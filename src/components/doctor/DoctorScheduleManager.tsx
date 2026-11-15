@@ -156,8 +156,8 @@ export function DoctorScheduleManager() {
       if (!res.ok) throw new Error(data.error || "Failed to update schedule");
 
       toast.success("OPD Schedule and Slot Availability successfully synced!");
-    } catch (err: any) {
-      toast.error(err?.message || "Failed to save schedule");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to save schedule");
     } finally {
       setIsSaving(false);
     }

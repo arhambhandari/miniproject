@@ -26,7 +26,7 @@ export const MOCK_DOCTORS = [
     fee: 2500,
     user: {
       name: "Dr. Vikramaditya Rathore",
-      image: "https://images.unsplash.com/photo-1537368910025-702800a95136?auto=format&fit=crop&q=80&w=400"
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400"
     }
   },
   {
@@ -41,7 +41,7 @@ export const MOCK_DOCTORS = [
     fee: 1800,
     user: {
       name: "Dr. Ananya Sengupta",
-      image: "https://images.unsplash.com/photo-1594824436998-058b233a0ec2?auto=format&fit=crop&q=80&w=400"
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400"
     }
   },
   {

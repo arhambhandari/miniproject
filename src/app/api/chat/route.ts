@@ -88,7 +88,7 @@ export async function POST(req: Request) {
       ];
 
       return NextResponse.json({
-        reply: `⚠️ **CRITICAL CLINICAL ALERT**\n\nYour symptoms may indicate an acute medical emergency. **If you or someone else is unresponsive, having severe chest tightness radiating to the arm, sudden facial numbness, or severe respiratory failure, call 108 or 112 immediately.**\n\nFor urgent hospital admission, MediBook provides a **Fast-Track Priority Queue Jump** that immediately injects your admission token at the head of the OPD queue with zero upfront payment friction.`,
+        reply: `⚠️ **CRITICAL CLINICAL ALERT**\n\nYour symptoms may indicate an acute medical emergency. **If you or someone else is unresponsive, having severe chest tightness radiating to the arm, sudden facial numbness, or severe respiratory failure, call 108 or 112 immediately.**\n\nFor urgent hospital admission, MediNova provides a **Fast-Track Priority Queue Jump** that immediately injects your admission token at the head of the OPD queue with zero upfront payment friction.`,
         isEmergency: true,
         actions: emergencyActions,
         suggestedReplies: [

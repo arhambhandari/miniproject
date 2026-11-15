@@ -17,7 +17,7 @@ export function Navbar() {
           <div className="p-1.5 rounded-lg bg-blue-50 dark:bg-blue-900/40 group-hover:scale-110 transition-transform">
             <HeartPulse className="size-5 text-blue-600 dark:text-blue-400 group-hover:animate-pulse-subtle" />
           </div>
-          <span className="font-extrabold tracking-tight">MediBook</span>
+          <span className="font-extrabold tracking-tight">MediNova</span>
         </Link>
 
         <nav className="hidden md:flex items-center gap-6 text-sm font-medium text-slate-600 dark:text-slate-300">

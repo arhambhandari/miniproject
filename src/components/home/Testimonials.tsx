@@ -49,7 +49,7 @@ export function Testimonials() {
                     <Quote className="size-5 text-blue-100 dark:text-blue-950 group-hover:text-blue-200 dark:group-hover:text-blue-900 transition-colors" />
                   </div>
                   <p className="text-slate-700 dark:text-slate-300 italic mb-6 leading-relaxed">
-                    "{review.text}"
+                    &quot;{review.text}&quot;
                   </p>
                 </div>
 

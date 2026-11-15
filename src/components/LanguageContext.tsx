@@ -1,8 +1,31 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import React, { createContext, useContext, useSyncExternalStore, ReactNode } from "react";
 
 type Language = "en" | "hi";
+const LANGUAGE_CHANGE_EVENT = "medinova-language-change";
+let currentLanguage: Language = "en";
+
+function getLanguageSnapshot(): Language {
+  try {
+    const saved = localStorage.getItem("medibook_lang");
+    if (saved === "en" || saved === "hi") {
+      return saved;
+    }
+  } catch {
+    // Keep the in-memory preference when storage is unavailable.
+  }
+  return currentLanguage;
+}
+
+function subscribeToLanguage(onChange: () => void) {
+  window.addEventListener("storage", onChange);
+  window.addEventListener(LANGUAGE_CHANGE_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onChange);
+    window.removeEventListener(LANGUAGE_CHANGE_EVENT, onChange);
+  };
+}
 
 const translations = {
   en: {
@@ -43,20 +66,20 @@ const translations = {
     faq_q1: "How do I book an appointment?",
     faq_a1: "Simply search for a doctor, click 'Book Appointment', choose a time slot, and confirm your details. It takes less than 2 minutes.",
     faq_q2: "Are the doctors verified?",
-    faq_a2: "Yes, every doctor on MediBook goes through a strict verification process checking their medical license, qualifications, and experience.",
+    faq_a2: "Yes, every doctor on MediNova goes through a strict verification process checking their medical license, qualifications, and experience.",
     faq_q3: "Can I cancel my appointment?",
     faq_a3: "Yes, you can cancel or reschedule your appointment up to 2 hours before the scheduled time for a full refund.",
     // Footer
     footer_desc: "Making healthcare accessible, transparent, and seamless for everyone.",
     footer_patients: "Patients",
     footer_doctors: "Doctors",
-    footer_join: "Join MediBook",
+    footer_join: "Join MediNova",
     footer_provider: "Provider Dashboard",
     footer_company: "Company",
     footer_about: "About Us",
     footer_contact: "Contact",
     footer_privacy: "Privacy Policy",
-    footer_rights: "MediBook Platform. All rights reserved.",
+    footer_rights: "MediNova Platform. All rights reserved.",
 
     // Dashboard Navigation & Shell
     dashboard: "Dashboard",
@@ -186,20 +209,20 @@ const translations = {
     faq_q1: "मैं अपॉइंटमेंट कैसे बुक करूं?",
     faq_a1: "बस डॉक्टर खोजें, 'अपॉइंटमेंट बुक करें' पर क्लिक करें, समय चुनें और अपने विवरण की पुष्टि करें। इसमें 2 मिनट से भी कम समय लगता है।",
     faq_q2: "क्या डॉक्टर सत्यापित हैं?",
-    faq_a2: "हां, MediBook पर हर डॉक्टर एक सख्त सत्यापन प्रक्रिया से गुजरता है जिसमें उनके मेडिकल लाइसेंस, योग्यता और अनुभव की जांच की जाती है।",
+    faq_a2: "हां, MediNova पर हर डॉक्टर एक सख्त सत्यापन प्रक्रिया से गुजरता है जिसमें उनके मेडिकल लाइसेंस, योग्यता और अनुभव की जांच की जाती है।",
     faq_q3: "क्या मैं अपना अपॉइंटमेंट रद्द कर सकता हूँ?",
     faq_a3: "हां, आप पूरे रिफंड के लिए निर्धारित समय से 2 घंटे पहले तक अपना अपॉइंटमेंट रद्द या पुनर्निर्धारित कर सकते हैं।",
     // Footer
     footer_desc: "सभी के लिए स्वास्थ्य सेवा को सुलभ, पारदर्शी और सहज बनाना।",
     footer_patients: "मरीज",
     footer_doctors: "डॉक्टर",
-    footer_join: "MediBook से जुड़ें",
+    footer_join: "MediNova से जुड़ें",
     footer_provider: "प्रदाता डैशबोर्ड",
     footer_company: "कंपनी",
     footer_about: "हमारे बारे में",
     footer_contact: "संपर्क करें",
     footer_privacy: "गोपनीयता नीति",
-    footer_rights: "MediBook प्लेटफॉर्म। सर्वाधिकार सुरक्षित।",
+    footer_rights: "MediNova प्लेटफॉर्म। सर्वाधिकार सुरक्षित।",
 
     // Dashboard Navigation & Shell
     dashboard: "डैशबोर्ड",
@@ -304,27 +327,20 @@ interface LanguageContextType {
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
 export function LanguageProvider({ children }: { children: ReactNode }) {
-  const [language, setLanguageState] = useState<Language>("en");
-
-  // Load persisted language from localStorage
-  useEffect(() => {
-    try {
-      const saved = localStorage.getItem("medibook_lang");
-      if (saved === "en" || saved === "hi") {
-        setLanguageState(saved);
-      }
-    } catch (e) {
-      // ignore in SSR or restricted environments
-    }
-  }, []);
+  const language = useSyncExternalStore(
+    subscribeToLanguage,
+    getLanguageSnapshot,
+    (): Language => "en"
+  );
 
   const setLanguage = (lang: Language) => {
-    setLanguageState(lang);
+    currentLanguage = lang;
     try {
       localStorage.setItem("medibook_lang", lang);
-    } catch (e) {
-      // ignore
+    } catch {
+      // Keep the in-memory preference when storage is unavailable.
     }
+    window.dispatchEvent(new Event(LANGUAGE_CHANGE_EVENT));
   };
 
   const t = (key: keyof Translations) => {
@@ -345,4 +361,3 @@ export function useLanguage() {
   }
   return context;
 }
-

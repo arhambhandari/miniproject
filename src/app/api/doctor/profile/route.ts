@@ -136,7 +136,7 @@ export async function PATCH(request: Request) {
           specialization: specialization || "General Medicine",
           qualifications: qualifications || "MBBS, MD",
           experience: Number(experience) || 5,
-          hospitalName: hospitalName || "MediBook Partner Clinic",
+          hospitalName: hospitalName || "MediNova Partner Clinic",
           contactNumber: contactNumber || "+91 98000 00000",
           fee: Number(fee) || 1500,
           bio: bio || "Experienced specialist doctor providing compassionate clinical consultations.",

@@ -3,15 +3,18 @@ import Razorpay from "razorpay";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { MOCK_DOCTORS } from "@/lib/data";
+import { getErrorMessage } from "@/lib/errors";
+import { isNonEmptyString, readJsonObject } from "@/lib/validation";
 
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    const { doctorId } = await req.json();
+    const body = await readJsonObject(req);
 
-    if (!doctorId || typeof doctorId !== "string") {
+    if (!body || !isNonEmptyString(body.doctorId)) {
       return NextResponse.json({ error: "Doctor ID is required" }, { status: 400 });
     }
+    const { doctorId } = body;
 
     // Look up doctor in database first to prevent fee tampering and reflect custom fees
     const dbDoctor = await prisma.doctorProfile.findUnique({
@@ -86,10 +89,10 @@ export async function POST(req: Request) {
         isSimulated: true,
       });
     }
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Payment order error:", error);
     return NextResponse.json(
-      { error: error?.message || "Could not create payment order" },
+      { error: getErrorMessage(error, "Could not create payment order") },
       { status: 500 }
     );
   }

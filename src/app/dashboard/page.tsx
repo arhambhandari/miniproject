@@ -298,7 +298,7 @@ export default function DashboardPage() {
                   <span className="size-10 rounded-xl bg-white/20 flex items-center justify-center">
                     <Stethoscope className="size-5 text-white" />
                   </span>
-                  <span className="font-bold text-xl">MediBook</span>
+                  <span className="font-bold text-xl">MediNova</span>
                 </div>
                 <nav className="space-y-2">
                   {[

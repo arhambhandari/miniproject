@@ -22,13 +22,14 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import type { Doctor } from "@/types";
+import type { Appointment } from "@/types";
 
 interface EmergencyBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   doctor?: Doctor | null;
   initialReason?: string;
-  onBookingSuccess?: (appointment: any, emergencyToken: string) => void;
+  onBookingSuccess?: (appointment: Appointment, emergencyToken: string) => void;
 }
 
 export function EmergencyBookingModal({
@@ -40,37 +41,36 @@ export function EmergencyBookingModal({
 }: EmergencyBookingModalProps) {
   const [patientName, setPatientName] = useState("Rahul Sharma");
   const [patientContact, setPatientContact] = useState("+91 98765 43210");
-  const [reason, setReason] = useState(
-    initialReason || "Acute Chest Pain & Breathing Discomfort"
-  );
+  const [reasonOverride, setReasonOverride] = useState<string | null>(null);
+  const reason = reasonOverride ?? initialReason ?? "Acute Chest Pain & Breathing Discomfort";
   const [loading, setLoading] = useState(false);
   const [confirmedToken, setConfirmedToken] = useState<string | null>(null);
+  const [fetchedDoctor, setFetchedDoctor] = useState<Doctor | null>(null);
 
   React.useEffect(() => {
-    if (initialReason) {
-      setReason(initialReason);
-    }
-  }, [initialReason]);
-
-  const [activeDoctor, setActiveDoctor] = useState<Doctor | null>(doctor || null);
-
-  React.useEffect(() => {
-    if (doctor && doctor.id && doctor.id !== "doc_1") {
-      setActiveDoctor(doctor);
-    } else {
-      fetch("/api/doctors")
-        .then((res) => res.json())
-        .then((data) => {
-          if (Array.isArray(data) && data.length > 0) {
-            setActiveDoctor(data[0]);
-          } else if (data?.doctors && data.doctors.length > 0) {
-            setActiveDoctor(data.doctors[0]);
-          }
-        })
-        .catch(() => {});
-    }
+    if (doctor && doctor.id !== "doc_1") return;
+    let isActive = true;
+    void fetch("/api/doctors")
+      .then((res) => res.json())
+      .then((data: unknown) => {
+        if (!isActive) return;
+        const doctors = Array.isArray(data)
+          ? data
+          : typeof data === "object" && data !== null && "doctors" in data && Array.isArray(data.doctors)
+            ? data.doctors
+            : [];
+        const firstDoctor = doctors[0] as Doctor | undefined;
+        if (firstDoctor) setFetchedDoctor(firstDoctor);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to load emergency booking doctor:", error);
+      });
+    return () => {
+      isActive = false;
+    };
   }, [doctor]);
 
+  const activeDoctor = doctor && doctor.id !== "doc_1" ? doctor : fetchedDoctor;
   if (!isOpen) return null;
 
   const assignedDoctorId = activeDoctor?.id || doctor?.id || "doc_1";
@@ -292,7 +292,7 @@ export function EmergencyBookingModal({
                     rows={2}
                     data-testid="emergency-reason-input"
                     value={reason}
-                    onChange={(e) => setReason(e.target.value)}
+                    onChange={(e) => setReasonOverride(e.target.value)}
                     placeholder="Describe sudden symptoms, severe pain location, or duration..."
                     className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800 text-xs text-slate-900 dark:text-white font-medium focus:ring-2 focus:ring-rose-500/20 focus:border-rose-500"
                   />
@@ -355,7 +355,7 @@ export function EmergencyBookingModal({
                   Emergency Admission Confirmed!
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-sm mx-auto">
-                  Your token has been injected ahead of scheduled visits and broadcast to the doctor's live chamber console.
+                  Your token has been injected ahead of scheduled visits and broadcast to the doctor&apos;s live chamber console.
                 </p>
               </div>
 

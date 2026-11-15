@@ -1,7 +1,12 @@
 import React from "react";
-import { render as rtlRender, screen } from "@testing-library/react";
+import { fireEvent, render as rtlRender, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { LanguageProvider } from "@/components/LanguageContext";
+import { RightPanel } from "@/components/dashboard/RightPanel";
+import { SettingsView } from "@/components/dashboard/SettingsView";
+import { NotificationsView } from "@/components/dashboard/NotificationsView";
+import { PatientVitalsCard } from "@/components/dashboard/PatientVitalsCard";
+import { LiveOPDQueueTracker } from "@/components/dashboard/LiveOPDQueueTracker";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { StatCards } from "@/components/dashboard/StatCards";
 import { ScheduledEventsCard } from "@/components/dashboard/ScheduledEventsCard";
@@ -12,12 +17,10 @@ const render = (ui: React.ReactElement) =>
 
 describe("Dashboard Components", () => {
   beforeEach(() => {
-    global.fetch = jest.fn().mockImplementation(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ records: [], latestVitals: null, state: null }),
-      })
-    ) as any;
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ records: [], latestVitals: null, state: null }),
+    } as Response);
   });
   it("renders WelcomeBanner with greeting and upcoming count", () => {
     render(<WelcomeBanner userName="Rahul Sharma" upcomingCount={3} />);
@@ -58,7 +61,6 @@ describe("Dashboard Components", () => {
   });
 
   it("allows toggling time range dropdown and switching period in PlansCard", () => {
-    const { fireEvent } = require("@testing-library/react");
     render(<PlansCard />);
 
     // Click the time range dropdown button
@@ -100,7 +102,6 @@ describe("Dashboard Components", () => {
       },
     ];
 
-    const { RightPanel } = require("@/components/dashboard/RightPanel");
     render(
       <RightPanel
         userName="Rahul Sharma"
@@ -116,8 +117,6 @@ describe("Dashboard Components", () => {
   });
 
   it("renders SettingsView with all detailed sections (profile, notifications, security, billing)", () => {
-    const { fireEvent } = require("@testing-library/react");
-    const { SettingsView } = require("@/components/dashboard/SettingsView");
     const onReturn = jest.fn();
 
     render(
@@ -152,8 +151,6 @@ describe("Dashboard Components", () => {
   });
 
   it("renders NotificationsView with filter pills and notification items", () => {
-    const { fireEvent } = require("@testing-library/react");
-    const { NotificationsView } = require("@/components/dashboard/NotificationsView");
     const onReturn = jest.fn();
     const onNav = jest.fn();
 
@@ -178,7 +175,6 @@ describe("Dashboard Components", () => {
   });
 
   it("renders PatientVitalsCard with clinical health biometrics", () => {
-    const { PatientVitalsCard } = require("@/components/dashboard/PatientVitalsCard");
     render(<PatientVitalsCard />);
 
     expect(screen.getByText("Clinical Health Vitals")).toBeInTheDocument();
@@ -191,7 +187,6 @@ describe("Dashboard Components", () => {
   });
 
   it("renders LiveOPDQueueTracker with themed tokens, chamber details, and queue steps", () => {
-    const { LiveOPDQueueTracker } = require("@/components/dashboard/LiveOPDQueueTracker");
     render(
       <LiveOPDQueueTracker
         upcomingAppointment={{
@@ -218,4 +213,3 @@ describe("Dashboard Components", () => {
     expect(screen.getByText("Token #A-08")).toBeInTheDocument();
   });
 });
-

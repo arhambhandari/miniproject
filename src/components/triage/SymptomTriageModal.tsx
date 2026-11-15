@@ -127,7 +127,7 @@ export function SymptomTriageModal({
         transition={{ duration: 0.25, ease: "easeOut" }}
         className="relative w-full max-w-3xl bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200/80 dark:border-slate-800 shadow-2xl overflow-hidden my-6 flex flex-col max-h-[88vh]"
       >
-        {/* Modal Header matching MediBook design system */}
+        {/* Modal Header matching MediNova design system */}
         <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-slate-800/80 flex items-center justify-between shrink-0 bg-slate-50/70 dark:bg-slate-900/70">
           <div className="flex items-center gap-3.5">
             <div className="size-11 rounded-2xl bg-blue-50 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/50 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0">

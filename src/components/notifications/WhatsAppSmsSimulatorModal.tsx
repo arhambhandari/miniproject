@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useSyncExternalStore } from "react";
 import {
   X,
   Send,
@@ -13,8 +13,6 @@ import {
   ShieldCheck,
   Pill,
   FileText,
-  AlertCircle,
-  ExternalLink,
   ChevronRight,
   Wifi,
   Battery,
@@ -26,12 +24,60 @@ import {
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
+import type { Appointment } from "@/types";
+
+type NotificationTemplate = "APPOINTMENT_PASS" | "MEDICATION_REMINDER" | "DOCTOR_DELAY" | "LAB_READY";
+
+interface SimulatedMessage {
+  channel: "WHATSAPP" | "SMS";
+  template: NotificationTemplate;
+  timestamp?: string;
+  previewTitle?: string;
+  previewBody?: string;
+  messageContent?: string;
+  messageId?: string;
+}
+
+const INITIAL_MESSAGE: SimulatedMessage = {
+  channel: "WHATSAPP",
+  template: "APPOINTMENT_PASS",
+  timestamp: "Just now",
+  previewTitle: "🏥 Apollo Specialty Hospital",
+  previewBody: "OPD Confirmed: Token #A-08 with Dr. Vikramaditya at Today, 10:30 AM.",
+  messageContent: `*Digital OPD Entry & Token Pass* 🏥\n\nNamaste Rahul Sharma,\nYour consultation at *Apollo Specialty Hospital, Mumbai* is confirmed.\n\n🎟️ *Queue Token:* Token #A-08\n👨‍⚕️ *Physician:* Dr. Vikramaditya\n⏰ *Slot:* Today, 10:30 AM\n🚪 *Location:* OPD Chamber 304, 3rd Floor Wing B\n🆔 *UHID / ABHA:* MB-98412\n\n*Important Instructions:*\n• Please arrive 10 minutes prior to your slot.\n• Show this digital WhatsApp message at the OPD reception desk for immediate priority entry.`,
+};
+
+const subscribeToClock = (onChange: () => void) => {
+  const timer = window.setInterval(onChange, 60_000);
+  return () => window.clearInterval(timer);
+};
+
+const getCurrentTime = () =>
+  new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+
+const getServerTime = () => "09:41";
+
+function isSimulatedMessage(value: unknown): value is SimulatedMessage {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    "channel" in value &&
+    (value.channel === "WHATSAPP" || value.channel === "SMS") &&
+    "template" in value &&
+    (value.template === "APPOINTMENT_PASS" ||
+      value.template === "MEDICATION_REMINDER" ||
+      value.template === "DOCTOR_DELAY" ||
+      value.template === "LAB_READY") &&
+    "messageContent" in value &&
+    typeof value.messageContent === "string"
+  );
+}
 
 interface WhatsAppSmsSimulatorModalProps {
   isOpen: boolean;
   onClose: () => void;
-  defaultTemplate?: "APPOINTMENT_PASS" | "MEDICATION_REMINDER" | "DOCTOR_DELAY" | "LAB_READY";
-  initialAppointment?: any;
+  defaultTemplate?: NotificationTemplate;
+  initialAppointment?: Appointment;
 }
 
 export function WhatsAppSmsSimulatorModal({
@@ -41,27 +87,22 @@ export function WhatsAppSmsSimulatorModal({
   initialAppointment,
 }: WhatsAppSmsSimulatorModalProps) {
   const [channel, setChannel] = useState<"WHATSAPP" | "SMS">("WHATSAPP");
-  const [template, setTemplate] = useState<"APPOINTMENT_PASS" | "MEDICATION_REMINDER" | "DOCTOR_DELAY" | "LAB_READY">(defaultTemplate);
+  const [templateOverride, setTemplateOverride] = useState<NotificationTemplate | null>(null);
+  const template = templateOverride ?? defaultTemplate;
   const [phone, setPhone] = useState("+91 98200 00000");
   const [isSending, setIsSending] = useState(false);
   const [showBanner, setShowBanner] = useState(false);
-  const [currentTime, setCurrentTime] = useState("09:41");
-  const [receivedMessages, setReceivedMessages] = useState<any[]>([]);
-
-  useEffect(() => {
-    setCurrentTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-  }, []);
-
-  useEffect(() => {
-    if (defaultTemplate) {
-      setTemplate(defaultTemplate);
-    }
-  }, [defaultTemplate]);
+  const currentTime = useSyncExternalStore(subscribeToClock, getCurrentTime, getServerTime);
+  const [receivedMessages, setReceivedMessages] = useState<SimulatedMessage[]>([INITIAL_MESSAGE]);
 
   // Audio effect using Web Audio API
   const playNotificationSound = () => {
     try {
-      const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const AudioContextConstructor =
+        window.AudioContext ||
+        (window as Window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+      if (!AudioContextConstructor) return;
+      const audioCtx = new AudioContextConstructor();
       const osc = audioCtx.createOscillator();
       const gain = audioCtx.createGain();
 
@@ -77,7 +118,7 @@ export function WhatsAppSmsSimulatorModal({
 
       osc.start();
       osc.stop(audioCtx.currentTime + 0.35);
-    } catch (e) {
+    } catch {
       // Audio context might be restricted before interaction
     }
   };
@@ -103,8 +144,17 @@ export function WhatsAppSmsSimulatorModal({
         }),
       });
 
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || "Simulation failed");
+      const data: unknown = await res.json();
+      if (!res.ok) {
+        const message =
+          typeof data === "object" && data !== null && "error" in data && typeof data.error === "string"
+            ? data.error
+            : "Simulation failed";
+        throw new Error(message);
+      }
+      if (!isSimulatedMessage(data)) {
+        throw new Error("The notification service returned an invalid message.");
+      }
 
       // Play chime
       playNotificationSound();
@@ -121,28 +171,12 @@ export function WhatsAppSmsSimulatorModal({
           ? `Simulated WhatsApp dispatch sent to ${phone}!`
           : `Simulated SMS alert sent to ${phone}!`
       );
-    } catch (err: any) {
-      toast.error(err.message || "Failed to dispatch message");
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to dispatch message");
     } finally {
       setIsSending(false);
     }
   };
-
-  // Pre-seed an initial message if empty
-  useEffect(() => {
-    if (isOpen && receivedMessages.length === 0) {
-      setReceivedMessages([
-        {
-          channel: "WHATSAPP",
-          template: "APPOINTMENT_PASS",
-          timestamp: "Just now",
-          previewTitle: "🏥 Apollo Specialty Hospital",
-          previewBody: "OPD Confirmed: Token #A-08 with Dr. Vikramaditya at Today, 10:30 AM.",
-          messageContent: `*Digital OPD Entry & Token Pass* 🏥\n\nNamaste Rahul Sharma,\nYour consultation at *Apollo Specialty Hospital, Mumbai* is confirmed.\n\n🎟️ *Queue Token:* Token #A-08\n👨‍⚕️ *Physician:* Dr. Vikramaditya\n⏰ *Slot:* Today, 10:30 AM\n🚪 *Location:* OPD Chamber 304, 3rd Floor Wing B\n🆔 *UHID / ABHA:* MB-98412\n\n*Important Instructions:*\n• Please arrive 10 minutes prior to your slot.\n• Show this digital WhatsApp message at the OPD reception desk for immediate priority entry.`,
-        },
-      ]);
-    }
-  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -261,7 +295,7 @@ export function WhatsAppSmsSimulatorModal({
                     return (
                       <div
                         key={tpl.id}
-                        onClick={() => setTemplate(tpl.id)}
+                        onClick={() => setTemplateOverride(tpl.id)}
                         data-testid={`template-${tpl.id}`}
                         className={`p-3 rounded-2xl border text-xs transition-all cursor-pointer flex items-center justify-between ${
                           isSelected

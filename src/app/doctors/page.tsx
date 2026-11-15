@@ -13,7 +13,7 @@ export default async function DoctorsDirectory() {
             <span className="flex size-8 items-center justify-center rounded-lg bg-blue-600 text-white">
               <HeartPulse className="size-4" />
             </span>
-            <span className="font-bold tracking-tight text-slate-900">MediBook</span>
+            <span className="font-bold tracking-tight text-slate-900">MediNova</span>
           </Link>
         </div>
       </header>

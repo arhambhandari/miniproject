@@ -82,6 +82,12 @@ export function MediGuideChatbot({
   const [inputValue, setInputValue] = useState("");
   const [loading, setLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageIdSequence = useRef(0);
+
+  const nextMessageId = (prefix: string) => {
+    messageIdSequence.current += 1;
+    return `${prefix}_${messageIdSequence.current}`;
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -98,7 +104,7 @@ export function MediGuideChatbot({
     if (!query || loading) return;
 
     const userMessage: ChatMessage = {
-      id: `user_${Date.now()}`,
+      id: nextMessageId("user"),
       sender: "user",
       text: query,
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -125,7 +131,7 @@ export function MediGuideChatbot({
       if (res.ok) {
         const data = await res.json();
         const botResponse: ChatMessage = {
-          id: `bot_${Date.now()}`,
+          id: nextMessageId("bot"),
           sender: "bot",
           text: data.reply || "I am processing your clinical inquiry.",
           timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
@@ -136,7 +142,7 @@ export function MediGuideChatbot({
         setMessages((prev) => [...prev, botResponse]);
       } else {
         const errBotMsg: ChatMessage = {
-          id: `bot_err_${Date.now()}`,
+          id: nextMessageId("bot_err"),
           sender: "bot",
           text: "I encountered an issue connecting to the hospital clinical engine. Please try asking again or check our emergency hotlines if urgent.",
           timestamp: "Just now",
@@ -146,7 +152,7 @@ export function MediGuideChatbot({
     } catch (err) {
       console.error("Failed to fetch chat response:", err);
       const netErrMsg: ChatMessage = {
-        id: `bot_err_${Date.now()}`,
+        id: nextMessageId("bot_err"),
         sender: "bot",
         text: "Network connection lost. If experiencing an emergency, please dial 108 or visit the nearest ER immediately.",
         timestamp: "Just now",

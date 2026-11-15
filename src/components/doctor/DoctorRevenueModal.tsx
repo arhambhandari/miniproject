@@ -16,11 +16,21 @@ import {
 import { motion } from "framer-motion";
 import { toast } from "sonner";
 
+interface RevenueAppointment {
+  id: string;
+  patientName: string;
+  fee: string | number;
+  paymentStatus?: string;
+  date?: string;
+  time?: string;
+  condition?: string;
+}
+
 interface DoctorRevenueModalProps {
   isOpen: boolean;
   onClose: () => void;
   totalEarnings: number;
-  appointments: any[];
+  appointments: RevenueAppointment[];
   doctorName: string;
   specialization: string;
 }
@@ -30,8 +40,6 @@ export function DoctorRevenueModal({
   onClose,
   totalEarnings,
   appointments,
-  doctorName,
-  specialization,
 }: DoctorRevenueModalProps) {
   if (!isOpen) return null;
 

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { getErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
@@ -24,7 +25,7 @@ const DEFAULT_SCHEDULE = {
 // In-memory persistent cache for schedule overrides per doctor
 const scheduleCache = new Map<string, typeof DEFAULT_SCHEDULE>();
 
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -52,9 +53,9 @@ export async function GET(req: Request) {
         hospitalName: doctorProfile?.hospitalName || "Apollo Specialty Hospital, Mumbai",
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET /api/doctor/schedule error:", err);
-    return NextResponse.json({ error: err?.message || "Failed to load schedule" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to load schedule") }, { status: 500 });
   }
 }
 
@@ -98,8 +99,8 @@ export async function POST(req: Request) {
       message: "OPD schedule and availability slots successfully updated and synced.",
       schedule: updatedSchedule,
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST /api/doctor/schedule error:", err);
-    return NextResponse.json({ error: err?.message || "Failed to update schedule" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to update schedule") }, { status: 500 });
   }
 }

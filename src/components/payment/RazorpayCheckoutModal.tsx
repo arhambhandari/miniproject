@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   X,
   ShieldCheck,
@@ -71,16 +71,6 @@ export function RazorpayCheckoutModal({
   const [failureReason, setFailureReason] = useState("");
   const [methodSummary, setMethodSummary] = useState("UPI (Google Pay)");
 
-  useEffect(() => {
-    if (isOpen) {
-      setStage("select_method");
-      setOtp("");
-      setFailureReason("");
-      const randNum = Math.floor(10000000 + Math.random() * 90000000);
-      setGeneratedPaymentId(`pay_test_${randNum}`);
-    }
-  }, [isOpen]);
-
   if (!isOpen) return null;
 
   const handleCopyUPI = () => {
@@ -113,6 +103,8 @@ export function RazorpayCheckoutModal({
   const handleProceedToAuth = (methodName: string) => {
     playTickSound();
     setMethodSummary(methodName);
+    const randNum = Math.floor(10000000 + Math.random() * 90000000);
+    setGeneratedPaymentId(`pay_test_${randNum}`);
     setStage("bank_otp");
   };
 
@@ -165,7 +157,7 @@ export function RazorpayCheckoutModal({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-extrabold tracking-tight">MediBook</h3>
+                  <h3 className="text-base font-extrabold tracking-tight">MediNova</h3>
                   <span
                     data-testid="rzp-test-mode-badge"
                     className="bg-amber-400/20 text-amber-300 border border-amber-400/40 text-[10px] font-black px-2 py-0.5 rounded-full uppercase tracking-wider"
@@ -611,7 +603,7 @@ export function RazorpayCheckoutModal({
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/80 space-y-2">
               <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
                 <span>Merchant:</span>
-                <span className="font-bold text-slate-900 dark:text-white">MediBook OPD</span>
+                <span className="font-bold text-slate-900 dark:text-white">MediNova OPD</span>
               </div>
               <div className="flex items-center justify-between text-xs font-semibold text-slate-600 dark:text-slate-300">
                 <span>Paying using:</span>
@@ -630,7 +622,7 @@ export function RazorpayCheckoutModal({
                 <span>Simulated SMS Sent to {patientContact}</span>
               </div>
               <p className="text-[11px] font-mono pl-5">
-                "Your MediBook OTP is <strong className="text-blue-600 dark:text-blue-400">123456</strong> for transaction of ₹{amount}. Do not share with anyone."
+                &quot;Your MediNova OTP is <strong className="text-blue-600 dark:text-blue-400">123456</strong> for transaction of ₹{amount}. Do not share with anyone.&quot;
               </p>
             </div>
 

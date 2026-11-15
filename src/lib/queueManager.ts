@@ -208,10 +208,11 @@ const globalForQueue = globalThis as unknown as {
   medibookQueueManager?: OPDQueueManager;
 };
 
-if (
-  globalForQueue.medibookQueueManager &&
-  typeof (globalForQueue.medibookQueueManager as any).insertEmergencyToken !== "function"
-) {
+const existingQueueManager = globalForQueue.medibookQueueManager as
+  | (OPDQueueManager & { insertEmergencyToken?: unknown })
+  | undefined;
+
+if (existingQueueManager && typeof existingQueueManager.insertEmergencyToken !== "function") {
   globalForQueue.medibookQueueManager = new OPDQueueManager();
 }
 

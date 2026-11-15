@@ -13,7 +13,7 @@ export function Footer() {
         <div className="space-y-4">
           <div className="flex items-center gap-2 font-bold text-xl tracking-tight text-blue-600 dark:text-blue-500">
             <HeartPulse className="size-6 text-blue-600 dark:text-blue-500" />
-            <span>MediBook</span>
+            <span>MediNova</span>
           </div>
           <p className="text-slate-500 dark:text-slate-400">
             Making healthcare accessible, transparent, and seamless for everyone.
@@ -31,7 +31,7 @@ export function Footer() {
         <div>
           <h4 className="font-bold text-slate-900 dark:text-white mb-4">Doctors</h4>
           <ul className="space-y-2 text-slate-500 dark:text-slate-400">
-            <li><Link href="/register?role=doctor" className="hover:text-blue-600 transition-colors">Join MediBook</Link></li>
+            <li><Link href="/register?role=doctor" className="hover:text-blue-600 transition-colors">Join MediNova</Link></li>
             <li><Link href="/login" className="hover:text-blue-600 transition-colors">Provider Dashboard</Link></li>
           </ul>
         </div>

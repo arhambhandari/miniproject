@@ -1,11 +1,12 @@
 import { NextResponse } from "next/server";
 import { auth } from "@/auth";
+import { getErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
 // GET: Fetch patient vitals (blending doctor clinical measurements with patient home tracking)
-export async function GET(req: Request) {
+export async function GET() {
   try {
     const session = await auth();
     if (!session?.user?.id) {
@@ -49,9 +50,9 @@ export async function GET(req: Request) {
         temperature: latestClinical?.temperature || "98.4",
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET /api/patient/vitals error:", err);
-    return NextResponse.json({ error: err.message || "Failed to fetch vitals" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to fetch vitals") }, { status: 500 });
   }
 }
 
@@ -103,8 +104,8 @@ export async function POST(req: Request) {
         temperature,
       },
     });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST /api/patient/vitals error:", err);
-    return NextResponse.json({ error: err.message || "Failed to process vitals" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to process vitals") }, { status: 500 });
   }
 }

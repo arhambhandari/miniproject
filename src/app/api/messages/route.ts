@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
+import type { Prisma } from "@prisma/client";
 import { auth } from "@/auth";
+import { getErrorMessage } from "@/lib/errors";
 import { prisma } from "@/lib/prisma";
+import { isNonEmptyString, isOptionalString, readJsonObject } from "@/lib/validation";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +20,7 @@ export async function GET(req: Request) {
     const appointmentId = searchParams.get("appointmentId");
     const currentUserId = session.user.id;
 
-    let whereClause: any;
+    let whereClause: Prisma.MessageWhereInput;
 
     if (partnerId) {
       whereClause = {
@@ -77,9 +80,9 @@ export async function GET(req: Request) {
       { messages: formatted },
       { headers: { "Cache-Control": "no-store, max-age=0" } }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("GET /api/messages error:", err);
-    return NextResponse.json({ error: err.message || "Failed to fetch messages" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to fetch messages") }, { status: 500 });
   }
 }
 
@@ -91,11 +94,17 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
+    const body = await readJsonObject(req);
+    if (!body) {
+      return NextResponse.json({ error: "Invalid message request" }, { status: 400 });
+    }
     const { receiverId, content, appointmentId } = body;
 
-    if (!receiverId || !content?.trim()) {
+    if (!isNonEmptyString(receiverId) || !isNonEmptyString(content)) {
       return NextResponse.json({ error: "Receiver ID and message content are required" }, { status: 400 });
+    }
+    if (!isOptionalString(appointmentId)) {
+      return NextResponse.json({ error: "Invalid appointment ID" }, { status: 400 });
     }
 
     // Verify receiver exists
@@ -139,8 +148,8 @@ export async function POST(req: Request) {
       },
       { status: 201 }
     );
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error("POST /api/messages error:", err);
-    return NextResponse.json({ error: err.message || "Failed to send message" }, { status: 500 });
+    return NextResponse.json({ error: getErrorMessage(err, "Failed to send message") }, { status: 500 });
   }
 }

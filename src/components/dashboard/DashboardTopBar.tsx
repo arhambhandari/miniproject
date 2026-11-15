@@ -45,7 +45,7 @@ export function DashboardTopBar({
           </motion.button>
         )}
         <span className="font-bold text-lg text-slate-900 dark:text-white">
-          MediBook
+          MediNova
         </span>
       </div>
 

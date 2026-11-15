@@ -18,27 +18,36 @@ interface DoctorGridProps {
 
 export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onClearSearch }: DoctorGridProps) {
   const { t } = useLanguage();
-  const [doctors, setDoctors] = useState<Doctor[]>(initialDoctors);
-  const [loading, setLoading] = useState(initialDoctors.length === 0);
+  const [fetchedDoctors, setFetchedDoctors] = useState<Doctor[]>([]);
+  const [hasLoaded, setHasLoaded] = useState(false);
+  const doctors = initialDoctors.length > 0 ? initialDoctors : fetchedDoctors;
+  const loading = initialDoctors.length === 0 && !hasLoaded;
 
   useEffect(() => {
-    if (initialDoctors.length > 0) {
-      setDoctors(initialDoctors);
-      setLoading(false);
-      return;
-    }
-
-    if (doctors.length === 0) {
-      setLoading(true);
-      fetch("/api/doctors")
-        .then((res) => res.json())
-        .then((data) => {
-          setDoctors(Array.isArray(data) ? data : data.doctors || []);
-        })
-        .catch(() => setDoctors([]))
-        .finally(() => setLoading(false));
-    }
-  }, [initialDoctors, doctors.length]);
+    if (initialDoctors.length > 0) return;
+    let isActive = true;
+    void fetch("/api/doctors")
+      .then((res) => res.json())
+      .then((data: unknown) => {
+        if (!isActive) return;
+        const result = Array.isArray(data)
+          ? data
+          : typeof data === "object" && data !== null && "doctors" in data && Array.isArray(data.doctors)
+            ? data.doctors
+            : [];
+        setFetchedDoctors(result as Doctor[]);
+      })
+      .catch((error: unknown) => {
+        console.error("Could not load doctors:", error);
+        if (isActive) setFetchedDoctors([]);
+      })
+      .finally(() => {
+        if (isActive) setHasLoaded(true);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [initialDoctors.length]);
 
   const filteredDoctors = useMemo(() => {
     if (!searchQuery || !searchQuery.trim()) return doctors;
@@ -92,7 +101,7 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
             <div className="flex items-center gap-2">
               <span className="text-slate-600 dark:text-slate-300">Filtered by:</span>
               <span className="font-bold text-blue-600 dark:text-blue-400 bg-white dark:bg-slate-800 px-2.5 py-0.5 rounded-lg border border-blue-200 dark:border-blue-700">
-                "{searchQuery}"
+                &quot;{searchQuery}&quot;
               </span>
               <span className="text-xs text-slate-400 font-medium">({filteredDoctors.length} found)</span>
             </div>
@@ -124,7 +133,7 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
             ))
           ) : filteredDoctors.length === 0 ? (
             <div className="col-span-full py-16 text-center rounded-3xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 p-8">
-              <p className="text-lg font-bold text-slate-800 dark:text-slate-200">No specialists found matching "{searchQuery}"</p>
+              <p className="text-lg font-bold text-slate-800 dark:text-slate-200">No specialists found matching &quot;{searchQuery}&quot;</p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Try another specialty like Cardiology, Dermatology, or Pediatrics.</p>
               {onClearSearch && (
                 <Button onClick={onClearSearch} className="mt-4 cursor-pointer">
@@ -170,7 +179,7 @@ export function DoctorGrid({ initialDoctors = [], onBook, searchQuery = "", onCl
                           <>
                             <Star className="size-3.5 fill-amber-400 text-amber-400" />
                             <span className="font-bold text-slate-800 dark:text-slate-200">
-                              {(doctor.reviews.reduce((acc: number, r: any) => acc + (r.rating || 5), 0) / doctor.reviews.length).toFixed(1)}
+                              {(doctor.reviews.reduce((total, review) => total + (review.rating || 5), 0) / doctor.reviews.length).toFixed(1)}
                             </span>
                             <span className="text-[10px] text-slate-400 font-normal">
                               ({doctor.reviews.length} reviews)
