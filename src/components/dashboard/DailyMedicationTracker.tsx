@@ -11,7 +11,6 @@ import {
   CalendarCheck2,
   X,
   CheckCircle2,
-  Utensils,
   NotebookPen
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,55 +27,18 @@ interface MedicationItem {
   taken: boolean;
   takenAt?: string;
   daysRemaining: number;
-  note?: string;
 }
-
-const INITIAL_MEDICATIONS: MedicationItem[] = [
-  {
-    id: "med_1",
-    name: "Atorvastatin",
-    dosage: "20 mg",
-    instruction: "1 tablet after breakfast for cholesterol control",
-    timeSlot: "Morning",
-    scheduledTime: "08:00 AM",
-    taken: true,
-    takenAt: "08:15 AM",
-    daysRemaining: 5,
-  },
-  {
-    id: "med_2",
-    name: "Vitamin D3",
-    dosage: "60,000 IU",
-    instruction: "1 softgel post-lunch for bone & immune health",
-    timeSlot: "Afternoon",
-    scheduledTime: "01:30 PM",
-    taken: true,
-    takenAt: "01:45 PM",
-    daysRemaining: 24,
-  },
-  {
-    id: "med_3",
-    name: "Telmisartan",
-    dosage: "40 mg",
-    instruction: "1 tablet at bedtime for blood pressure maintenance",
-    timeSlot: "Night",
-    scheduledTime: "09:00 PM",
-    taken: false,
-    daysRemaining: 18,
-  },
-];
 
 export function DailyMedicationTracker() {
   const { language, t } = useLanguage();
-  const [medications, setMedications] = useState<MedicationItem[]>(INITIAL_MEDICATIONS);
+  const [medications, setMedications] = useState<MedicationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Patient Log Medication Dose Modal State
   const [isLogModalOpen, setIsLogModalOpen] = useState(false);
-  const [selectedMedId, setSelectedMedId] = useState<string>(INITIAL_MEDICATIONS[2]?.id || INITIAL_MEDICATIONS[0]?.id || "");
+  const [selectedMedId, setSelectedMedId] = useState("");
   const [logTime, setLogTime] = useState<string>("");
-  const [mealTiming, setMealTiming] = useState<string>("After Meal");
-  const [patientNote, setPatientNote] = useState<string>("");
   const [isSavingDose, setIsSavingDose] = useState(false);
 
   const getTimeSlotLabel = (slot: string) => {
@@ -89,26 +51,24 @@ export function DailyMedicationTracker() {
   // Fetch live doctor-prescribed medications from DB
   const loadMedications = (signal?: AbortSignal) => {
     fetch("/api/medications", { signal })
-      .then((res) => {
-        if (!res.ok) return { medications: [] };
-        return res.json();
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to fetch medications");
+        return data;
       })
       .then((data) => {
-        if (data?.medications && Array.isArray(data.medications) && data.medications.length > 0) {
-          setMedications(data.medications);
-          const firstUntaken = data.medications.find((medication: MedicationItem) => !medication.taken);
-          if (firstUntaken) {
-            setSelectedMedId(firstUntaken.id);
-          } else {
-            setSelectedMedId(data.medications[0].id);
-          }
-        }
-        setLoading(false);
+        const items: MedicationItem[] = Array.isArray(data.medications) ? data.medications : [];
+        setMedications(items);
+        setSelectedMedId(items.find((medication) => !medication.taken)?.id || items[0]?.id || "");
+        setLoadError(null);
       })
       .catch((err) => {
         if (err?.name === "AbortError") return;
-        console.warn("Could not load medications, using offline/cached data:", err?.message || err);
-        setLoading(false);
+        console.error("Could not load medications:", err);
+        setLoadError(err instanceof Error ? err.message : "Failed to fetch medications");
+      })
+      .finally(() => {
+        if (!signal?.aborted) setLoading(false);
       });
   };
 
@@ -119,6 +79,7 @@ export function DailyMedicationTracker() {
   }, []);
 
   const openLogModalForMed = (id?: string) => {
+    if (medications.length === 0) return;
     if (id) {
       setSelectedMedId(id);
     } else {
@@ -127,54 +88,43 @@ export function DailyMedicationTracker() {
       else if (medications[0]) setSelectedMedId(medications[0].id);
     }
     setLogTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-    setMealTiming("After Meal");
-    setPatientNote("");
     setIsLogModalOpen(true);
   };
 
   const handleToggleTaken = async (id: string) => {
     const currentMed = medications.find((m) => m.id === id);
-    const nowTaken = currentMed ? !currentMed.taken : true;
+    if (!currentMed) return;
+    const nowTaken = !currentMed.taken;
     const timeNow = new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 
-    setMedications((prev) =>
-      prev.map((med) => {
-        if (med.id !== id) return med;
-        if (nowTaken) {
-          toast.success(
-            language === "hi"
-              ? `${med.name} ${med.dosage} ली गई चिह्नित!`
-              : `Marked ${med.name} ${med.dosage} as taken at ${timeNow}`
-          );
-          return {
-            ...med,
-            taken: true,
-            takenAt: timeNow,
-          };
-        } else {
-          toast.info(
-            language === "hi"
-              ? `${med.name} की खुराक रद्द की गई`
-              : `Undid dose for ${med.name}`
-          );
-          return {
-            ...med,
-            taken: false,
-            takenAt: undefined,
-          };
-        }
-      })
-    );
-
-    // Persist to database
     try {
-      await fetch("/api/medications", {
+      const res = await fetch("/api/medications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ id, taken: nowTaken, takenAt: nowTaken ? timeNow : null }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to update medication");
+
+      setMedications((prev) =>
+        prev.map((med) =>
+          med.id === id
+            ? { ...med, taken: nowTaken, takenAt: nowTaken ? timeNow : undefined }
+            : med
+        )
+      );
+      toast.success(
+        nowTaken
+          ? language === "hi"
+            ? `${currentMed.name} ${currentMed.dosage} ली गई चिह्नित!`
+            : `Marked ${currentMed.name} ${currentMed.dosage} as taken at ${timeNow}`
+          : language === "hi"
+            ? `${currentMed.name} की खुराक रद्द की गई`
+            : `Undid dose for ${currentMed.name}`
+      );
     } catch (err) {
       console.error("Failed to persist medication state:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to update medication");
     }
   };
 
@@ -188,7 +138,7 @@ export function DailyMedicationTracker() {
 
     try {
       // Persist to DB
-      await fetch("/api/medications", {
+      const res = await fetch("/api/medications", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -197,8 +147,9 @@ export function DailyMedicationTracker() {
           takenAt: timeToRecord,
         }),
       });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to record medication dose");
 
-      // Update state
       setMedications((prev) =>
         prev.map((med) => {
           if (med.id !== selectedMedId) return med;
@@ -206,7 +157,6 @@ export function DailyMedicationTracker() {
             ...med,
             taken: true,
             takenAt: timeToRecord,
-            note: patientNote.trim() || undefined,
           };
         })
       );
@@ -228,12 +178,8 @@ export function DailyMedicationTracker() {
     }
   };
 
-  const handleRefill = (medName: string) => {
-    toast.success(`Refill order placed for ${medName} via Apollo Hospital Pharmacy delivery.`);
-  };
-
   const takenCount = medications.filter((m) => m.taken).length;
-  const adherencePercent = medications.length > 0 ? Math.round((takenCount / medications.length) * 100) : 100;
+  const adherencePercent = medications.length > 0 ? Math.round((takenCount / medications.length) * 100) : null;
 
   return (
     <>
@@ -263,7 +209,7 @@ export function DailyMedicationTracker() {
           <div className="flex items-center gap-2.5 self-start sm:self-auto">
             <div className="px-3 py-1.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 text-xs font-bold flex items-center gap-1.5 shadow-2xs">
               <Sparkles className="size-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>{adherencePercent}% {language === "hi" ? "आज पूर्ण" : "Completed Today"}</span>
+              <span>{adherencePercent === null ? (language === "hi" ? "कोई दवा निर्धारित नहीं" : "No prescribed medications") : `${adherencePercent}% ${language === "hi" ? "आज पूर्ण" : "Completed Today"}`}</span>
             </div>
 
             {/* Patient Primary Log Button */}
@@ -272,7 +218,8 @@ export function DailyMedicationTracker() {
               whileHover={{ scale: 1.04 }}
               whileTap={{ scale: 0.96 }}
               onClick={() => openLogModalForMed()}
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer"
+              disabled={loading || medications.length === 0}
+              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-sm shadow-blue-500/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <Plus className="size-3.5" />
               <span>{language === "hi" ? "खुराक दर्ज करें" : "Log Medication Dose"}</span>
@@ -282,6 +229,12 @@ export function DailyMedicationTracker() {
 
         {/* Medication Doses List */}
         <div className="space-y-2.5">
+          {loadError && <p role="alert" className="text-sm text-rose-600 dark:text-rose-400">{loadError}</p>}
+          {!loading && !loadError && medications.length === 0 && (
+            <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+              {language === "hi" ? "आपके खाते में कोई निर्धारित दवा नहीं है।" : "No prescribed medications are linked to your account."}
+            </p>
+          )}
           {medications.map((med) => (
             <div
               key={med.id}
@@ -328,12 +281,9 @@ export function DailyMedicationTracker() {
                       </span>
                     )}
                     {med.daysRemaining <= 7 && (
-                      <button
-                        onClick={() => handleRefill(med.name)}
-                        className="text-rose-600 dark:text-rose-400 hover:underline font-bold flex items-center gap-1 cursor-pointer"
-                      >
-                        <AlertTriangle className="size-3" /> {med.daysRemaining} {language === "hi" ? "दिन शेष • रीफ़िल" : "days left • Refill"}
-                      </button>
+                      <span className="text-rose-600 dark:text-rose-400 font-bold flex items-center gap-1">
+                        <AlertTriangle className="size-3" /> {med.daysRemaining} {language === "hi" ? "दिन शेष" : "days remaining"}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -463,45 +413,6 @@ export function DailyMedicationTracker() {
                     />
                     <Clock className="size-4 text-slate-400 absolute left-3 top-3" />
                   </div>
-                </div>
-
-                {/* Meal Context Chips */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1">
-                    <Utensils className="size-3 text-slate-500" />
-                    <span>{language === "hi" ? "भोजन संदर्भ" : "Meal Timing Context"}</span>
-                  </label>
-                  <div className="grid grid-cols-3 gap-2">
-                    {["After Meal", "Before Meal", "With Water"].map((opt) => (
-                      <button
-                        type="button"
-                        key={opt}
-                        onClick={() => setMealTiming(opt)}
-                        className={`py-1.5 px-2 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${
-                          mealTiming === opt
-                            ? "bg-blue-600 text-white border-blue-600 shadow-2xs"
-                            : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300"
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Optional Patient Note */}
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                    {language === "hi" ? "टिप्पणी (वैकल्पिक)" : "Personal Notes (Optional)"}
-                  </label>
-                  <input
-                    type="text"
-                    data-testid="log-med-note-input"
-                    value={patientNote}
-                    onChange={(e) => setPatientNote(e.target.value)}
-                    placeholder="e.g. Taken post dinner with warm water"
-                    className="w-full h-10 px-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white focus:ring-2 focus:ring-blue-500 outline-none"
-                  />
                 </div>
 
                 {/* Actions */}

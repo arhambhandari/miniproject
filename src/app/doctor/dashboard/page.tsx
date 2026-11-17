@@ -1,33 +1,24 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import Link from "next/link";
+import React, { useCallback, useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  HeartPulse,
   CalendarCheck,
   Clock,
   User,
   LogOut,
   CheckCircle,
   XCircle,
-  IndianRupee,
   Loader2,
   Pill,
-  Activity,
   MessageSquare,
   Send,
   Building2,
   ShieldCheck,
   Stethoscope,
-  Search,
-  Plus,
-  Phone,
   Mail,
-  FileText,
   Sparkles,
   ChevronRight,
-  Filter,
   X
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -99,10 +90,7 @@ export default function DoctorDashboardPage() {
 
   // User session & Doctor profile state
   const [doctorName, setDoctorName] = useState<string>("Doctor");
-  const [doctorEmail, setDoctorEmail] = useState<string>("");
   const [specialization, setSpecialization] = useState<string>("Specialist Physician");
-  const [hospitalName, setHospitalName] = useState<string>("Apollo Specialty Hospital, Mumbai");
-  const [consultationFee, setConsultationFee] = useState<number>(2000);
   const [doctorProfile, setDoctorProfile] = useState<DoctorProfile>({
     name: "Doctor",
     specialization: "Specialist Physician",
@@ -133,7 +121,7 @@ export default function DoctorDashboardPage() {
   const [chatInput, setChatInput] = useState<string>("");
   const [chatSending, setChatSending] = useState<boolean>(false);
 
-  const loadDoctorProfile = (signal?: AbortSignal) => {
+  const loadDoctorProfile = useCallback((signal?: AbortSignal) => {
     fetch("/api/doctor/profile", { signal })
       .then((res) => {
         if (!res.ok) return null;
@@ -143,19 +131,16 @@ export default function DoctorDashboardPage() {
         if (data?.profile) {
           setDoctorProfile(data.profile);
           if (data.profile.name) setDoctorName(data.profile.name);
-          if (data.profile.email) setDoctorEmail(data.profile.email);
           if (data.profile.specialization) setSpecialization(data.profile.specialization);
-          if (data.profile.hospitalName) setHospitalName(data.profile.hospitalName);
-          if (data.profile.fee) setConsultationFee(data.profile.fee);
         }
       })
       .catch((err) => {
         if (err?.name === "AbortError") return;
         console.warn("Could not fetch doctor profile:", err?.message || err);
       });
-  };
+  }, []);
 
-  const loadAppointments = (signal?: AbortSignal) => {
+  const loadAppointments = useCallback((signal?: AbortSignal) => {
     fetch("/api/appointments", { signal })
       .then((res) => {
         if (!res.ok) return { appointments: [] };
@@ -175,9 +160,9 @@ export default function DoctorDashboardPage() {
         console.warn("Could not fetch doctor appointments:", err?.message || err);
         setLoading(false);
       });
-  };
+  }, []);
 
-  const loadPatients = (signal?: AbortSignal) => {
+  const loadPatients = useCallback((signal?: AbortSignal) => {
     fetch("/api/doctor/patients", { signal })
       .then((res) => {
         if (!res.ok) return { patients: [] };
@@ -186,8 +171,8 @@ export default function DoctorDashboardPage() {
       .then((data) => {
         if (data?.patients && Array.isArray(data.patients)) {
           setPatients(data.patients);
-          if (data.patients.length > 0 && !selectedChatPatientId) {
-            setSelectedChatPatientId(data.patients[0].patientId);
+          if (data.patients.length > 0) {
+            setSelectedChatPatientId((current) => current || data.patients[0].patientId);
           }
         }
         setPatientsLoading(false);
@@ -197,7 +182,7 @@ export default function DoctorDashboardPage() {
         console.warn("Could not fetch patients:", err?.message || err);
         setPatientsLoading(false);
       });
-  };
+  }, []);
 
   // Load Session and verify DOCTOR role.
   useEffect(() => {
@@ -217,7 +202,6 @@ export default function DoctorDashboardPage() {
           return;
         }
         if (data.user.name) setDoctorName(data.user.name);
-        if (data.user.email) setDoctorEmail(data.user.email);
       })
       .catch((err) => {
         if (err?.name === "AbortError") return;
@@ -232,7 +216,7 @@ export default function DoctorDashboardPage() {
       isMounted = false;
       controller.abort();
     };
-  }, [router]);
+  }, [loadAppointments, loadDoctorProfile, loadPatients, router]);
 
   // Appointment status handler
   const handleStatusChange = async (id: string, newStatus: string) => {
@@ -260,11 +244,12 @@ export default function DoctorDashboardPage() {
 
   // Chat functionality
   const activeChatPatient = patients.find((p) => p.patientId === selectedChatPatientId) || patients[0];
+  const activeChatPatientUserId = activeChatPatient?.userId;
 
-  const fetchChatMessages = async () => {
-    if (!activeChatPatient?.userId) return;
+  const fetchChatMessages = useCallback(async () => {
+    if (!activeChatPatientUserId) return;
     try {
-      const res = await fetch(`/api/messages?partnerId=${activeChatPatient.userId}`);
+      const res = await fetch(`/api/messages?partnerId=${activeChatPatientUserId}`);
       if (res.ok) {
         const data = await res.json();
         if (data.messages && Array.isArray(data.messages)) {
@@ -274,18 +259,18 @@ export default function DoctorDashboardPage() {
     } catch (err) {
       console.error("Error fetching chat messages:", err);
     }
-  };
+  }, [activeChatPatientUserId]);
 
   useEffect(() => {
-    if (activeTab === "chat" && activeChatPatient?.userId) {
+    if (activeTab === "chat" && activeChatPatientUserId) {
       const initialFetch = window.setTimeout(() => void fetchChatMessages(), 0);
-      const interval = setInterval(fetchChatMessages, 3500);
+      const interval = window.setInterval(() => void fetchChatMessages(), 3500);
       return () => {
         window.clearTimeout(initialFetch);
-        clearInterval(interval);
+        window.clearInterval(interval);
       };
     }
-  }, [activeTab, activeChatPatient?.userId]);
+  }, [activeTab, activeChatPatientUserId, fetchChatMessages]);
 
   const handleSendChatMessage = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1116,8 +1101,6 @@ export default function DoctorDashboardPage() {
                     setDoctorProfile(updated);
                     if (updated.name) setDoctorName(updated.name);
                     if (updated.specialization) setSpecialization(updated.specialization);
-                    if (updated.hospitalName) setHospitalName(updated.hospitalName);
-                    if (updated.fee) setConsultationFee(updated.fee);
                     loadDoctorProfile();
                   }}
                 />

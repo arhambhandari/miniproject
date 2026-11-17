@@ -1,7 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getOrSetCache, invalidateCache } from "@/lib/cache";
-import { MOCK_DOCTORS } from "@/lib/data";
 import type { Doctor } from "@/types";
 
 export interface GetDoctorsParams {
@@ -73,7 +72,7 @@ export async function getDoctorsData(params: GetDoctorsParams = {}): Promise<Doc
         });
 
         if (!doctors || doctors.length === 0) {
-          return MOCK_DOCTORS;
+          return [];
         }
 
         return doctors.map((doc) => {
@@ -112,8 +111,8 @@ export async function getDoctorsData(params: GetDoctorsParams = {}): Promise<Doc
           };
         });
       } catch (error) {
-        console.error("[Doctors] Database query failed, using fallback:", error);
-        return MOCK_DOCTORS;
+        console.error("[Doctors] Database query failed:", error);
+        throw error;
       }
     },
     60 // 60 seconds TTL

@@ -99,9 +99,7 @@ export async function GET() {
         status: statusNormalized,
         fee: `₹${(appt.payment?.amount || appt.doctor?.fee || 1500).toLocaleString()}`,
         paymentStatus: appt.payment?.status || "PENDING",
-        hospitalName: appt.doctor?.hospitalName || "Apollo Specialty Hospital",
-        roomNumber: "OPD Chamber 304",
-        tokenNumber: "Token #A-08",
+        hospitalName: appt.doctor?.hospitalName || null,
       };
     });
 
@@ -150,21 +148,12 @@ export async function POST(req: Request) {
     const normalizedStartTime = String(startTime).trim();
 
     // 1. Verify doctor exists and fetch fee
-    let doctor = await prisma.doctorProfile.findUnique({
+    const doctor = await prisma.doctorProfile.findUnique({
       where: { id: doctorId },
       include: {
         user: { select: { name: true, email: true } },
       },
     });
-
-    if (!doctor) {
-      // Fallback: If doctorId is a mock ID (e.g. "doc_1") or in emergency fast-track mode, grab the first active doctor
-      doctor = await prisma.doctorProfile.findFirst({
-        include: {
-          user: { select: { name: true, email: true } },
-        },
-      });
-    }
 
     if (!doctor) {
       return NextResponse.json({ error: "Selected doctor profile was not found." }, { status: 404 });
@@ -202,6 +191,11 @@ export async function POST(req: Request) {
           userId: session.user.id,
           contactNumber: patientContact || null,
         },
+      });
+    } else if (patientContact && patientContact !== patientProfile.contactNumber) {
+      patientProfile = await prisma.patientProfile.update({
+        where: { id: patientProfile.id },
+        data: { contactNumber: patientContact },
       });
     }
 
@@ -343,7 +337,7 @@ export async function POST(req: Request) {
       status: newAppointment.status,
       fee: apptFee,
       paymentId: paymentId || undefined,
-      tokenNumber: emergencyTokenNumber || "Token #A-08",
+      tokenNumber: emergencyTokenNumber,
       isEmergency: !!isEmergency,
     };
 

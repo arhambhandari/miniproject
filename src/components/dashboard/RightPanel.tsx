@@ -57,8 +57,8 @@ function parseAppointmentDate(dateStr: string): Date | null {
 }
 
 export function RightPanel({
-  userName = "Rahul Sharma",
-  userEmail = "rahul@example.com",
+  userName = "Patient",
+  userEmail = "",
   userImage,
   appointments = [],
   onCancelAppointment,
@@ -295,7 +295,7 @@ export function RightPanel({
                   />
                   <div className="flex items-center justify-between gap-1 leading-none">
                     <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400">
-                      {app.time || "10:00 AM"}
+                      {app.time || "Time not specified"}
                     </span>
                     <span
                       className={`text-[9px] font-bold px-1.5 py-0.5 rounded ${
@@ -321,7 +321,7 @@ export function RightPanel({
                   <div className="flex items-center justify-between text-[10px] text-slate-400 mt-0.5">
                     <span className="truncate max-w-[120px]">{app.specialty}</span>
                     <span className="text-slate-500 dark:text-slate-400 font-medium shrink-0">
-                      {app.roomNumber || "Chamber 304"}
+                      {app.roomNumber || "Room not specified"}
                     </span>
                   </div>
 
@@ -333,7 +333,7 @@ export function RightPanel({
                           {app.tokenNumber}
                         </span>
                       )}
-                      {onOpenPass && (
+                      {app.tokenNumber && onOpenPass && (
                         <button
                           onClick={() => onOpenPass(app)}
                           className="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 hover:underline flex items-center gap-1 cursor-pointer"

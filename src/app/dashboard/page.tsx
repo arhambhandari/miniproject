@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -9,12 +9,8 @@ import {
   Clock,
   XCircle,
   Stethoscope,
-  Filter,
   CheckCircle2,
   Calendar,
-  IndianRupee,
-  ChevronRight,
-  ShieldCheck,
   Building2,
   QrCode,
   X,
@@ -26,15 +22,14 @@ import { DashboardSidebar } from "@/components/dashboard/DashboardSidebar";
 import { DashboardTopBar } from "@/components/dashboard/DashboardTopBar";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { StatCards } from "@/components/dashboard/StatCards";
-import { PatientVitalsCard } from "@/components/dashboard/PatientVitalsCard";
+import { PatientVitalsCard, type LatestVitals } from "@/components/dashboard/PatientVitalsCard";
 import { LiveOPDQueueTracker } from "@/components/dashboard/LiveOPDQueueTracker";
 import { DailyMedicationTracker } from "@/components/dashboard/DailyMedicationTracker";
-import { PlansCard } from "@/components/dashboard/PlansCard";
+import { PlansCard, type TreatmentPlan } from "@/components/dashboard/PlansCard";
 import { RightPanel } from "@/components/dashboard/RightPanel";
 import { SimulatorFloatingButton } from "@/components/notifications/SimulatorFloatingButton";
 import { AmbientBackgroundGlow } from "@/components/ui/AmbientBackgroundGlow";
 import { TriageFloatingBanner } from "@/components/triage/TriageFloatingBanner";
-import { MOCK_DOCTORS } from "@/lib/data";
 import { useLanguage } from "@/components/LanguageContext";
 import type { Appointment, Doctor } from "@/types";
 
@@ -80,78 +75,27 @@ const MediGuideChatbot = dynamic(
   { ssr: false }
 );
 
-// Initial default appointments matching landing page doctors with deterministic dates for SSR
-const INITIAL_APPOINTMENTS: Appointment[] = [
-  {
-    id: "app_1",
-    patientName: "Rahul Sharma",
-    doctorId: "doc_1",
-    doctorName: "Dr. Aarav Mehta",
-    specialty: "Neuro-Oncology",
-    date: "Today",
-    time: "10:00 AM",
-    status: "Upcoming",
-    fee: "₹2,000",
-    hospitalName: "AIIMS Super Specialty Hospital, New Delhi",
-    roomNumber: "OPD Chamber 304",
-    tokenNumber: "Token #A-08",
-  },
-  {
-    id: "app_2",
-    patientName: "Rahul Sharma",
-    doctorId: "doc_2",
-    doctorName: "Dr. Vikramaditya Rathore",
-    specialty: "Surgical Oncology",
-    date: "Sep 9, 2026",
-    time: "02:30 PM",
-    status: "Completed",
-    fee: "₹2,500",
-    hospitalName: "Tata Memorial Centre, Mumbai",
-    roomNumber: "OPD Room 112",
-    tokenNumber: "Token #B-14",
-  },
-  {
-    id: "app_3",
-    patientName: "Rahul Sharma",
-    doctorId: "doc_6",
-    doctorName: "Dr. Rohan Banerjee",
-    specialty: "Pediatric Care",
-    date: "Sep 14, 2026",
-    time: "09:30 AM",
-    status: "Upcoming",
-    fee: "₹1,500",
-    hospitalName: "Medanta – The Medicity, Gurugram",
-    roomNumber: "Pediatric Wing Room 205",
-    tokenNumber: "Token #C-05",
-  },
-  {
-    id: "app_4",
-    patientName: "Rahul Sharma",
-    doctorId: "doc_4",
-    doctorName: "Dr. Rajesh Iyer",
-    specialty: "Cardiology",
-    date: "Sep 9, 2026",
-    time: "11:00 AM",
-    status: "Completed",
-    fee: "₹2,200",
-    hospitalName: "Fortis Escorts Heart Institute, New Delhi",
-    roomNumber: "Cardiology Suite 201",
-    tokenNumber: "Token #D-02",
-  },
-];
-
 export default function DashboardPage() {
   const router = useRouter();
-  const { language, t } = useLanguage();
-  const [appointments, setAppointments] = useState<Appointment[]>(INITIAL_APPOINTMENTS);
+  const { t } = useLanguage();
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [appointmentLoadError, setAppointmentLoadError] = useState<string | null>(null);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
+  const [doctorsLoading, setDoctorsLoading] = useState(true);
+  const [doctorLoadError, setDoctorLoadError] = useState<string | null>(null);
+  const [clinicalRecordsCount, setClinicalRecordsCount] = useState<number | null>(null);
+  const [clinicalRecordsLoadError, setClinicalRecordsLoadError] = useState<string | null>(null);
+  const [clinicalVitals, setClinicalVitals] = useState<LatestVitals | null>(null);
+  const [treatmentPlans, setTreatmentPlans] = useState<TreatmentPlan[]>([]);
+  const [clinicalRecordsLoading, setClinicalRecordsLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // User session state
-  const [userName, setUserName] = useState("Rahul Sharma");
-  const [userEmail, setUserEmail] = useState("rahul.sharma@example.com");
+  const [userName, setUserName] = useState("Patient");
+  const [userEmail, setUserEmail] = useState("");
   const [userImage, setUserImage] = useState<string | undefined>(undefined);
 
   // Doctor booking modal state
@@ -170,82 +114,128 @@ export default function DashboardPage() {
   const [reviewingAppointment, setReviewingAppointment] = useState<Appointment | null>(null);
   const [reviewedAppointmentIds, setReviewedAppointmentIds] = useState<string[]>([]);
 
+  const loadAppointments = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const res = await fetch("/api/appointments", { signal });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch appointments");
+      setAppointments(Array.isArray(data.appointments) ? data.appointments : []);
+      setAppointmentLoadError(null);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.error("Could not load appointments:", err);
+      setAppointmentLoadError(err instanceof Error ? err.message : "Failed to fetch appointments");
+    } finally {
+      if (!signal?.aborted) setLoading(false);
+    }
+  }, []);
+
+  const loadDoctors = useCallback(async (signal?: AbortSignal) => {
+    try {
+      const res = await fetch("/api/doctors", { signal });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to fetch doctors");
+      setDoctors(Array.isArray(data) ? data : []);
+      setDoctorLoadError(null);
+    } catch (err) {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.error("Could not load doctors:", err);
+      setDoctorLoadError(err instanceof Error ? err.message : "Failed to fetch doctors");
+    } finally {
+      if (!signal?.aborted) setDoctorsLoading(false);
+    }
+  }, []);
+
   useEffect(() => {
-    let isMounted = true;
     const controller = new AbortController();
 
-    // Fetch logged in session if available
     fetch("/api/auth/session", { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) return null;
+      .then(async (res) => {
+        if (!res.ok) throw new Error("Failed to load user session");
         return res.json();
       })
       .then((data) => {
-        if (!isMounted) return;
         if (data?.user?.role === "DOCTOR") {
           router.replace("/doctor/dashboard");
           return;
         }
-        if (data?.user?.name) {
-          setUserName(data.user.name);
-        } else if (data?.user?.email) {
-          setUserName(data.user.email.split("@")[0]);
-        }
+        if (data?.user?.name) setUserName(data.user.name);
+        else if (data?.user?.email) setUserName(data.user.email.split("@")[0]);
         if (data?.user?.email) setUserEmail(data.user.email);
         if (data?.user?.image) setUserImage(data.user.image);
       })
       .catch((err) => {
-        if (err?.name === "AbortError") return;
-        // Fallback to default user
+        if (err instanceof Error && err.name === "AbortError") return;
+        console.error("Could not load user session:", err);
       });
 
-    // Fetch live user appointments
-    fetch("/api/appointments", { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) {
-          return { appointments: [] };
-        }
-        return res.json();
-      })
-      .then((data) => {
-        if (!isMounted) return;
-        if (data?.appointments && Array.isArray(data.appointments) && data.appointments.length > 0) {
-          setAppointments(data.appointments);
-        }
-        setLoading(false);
+    void Promise.resolve().then(() => loadAppointments(controller.signal));
+    void Promise.resolve().then(() => loadDoctors(controller.signal));
+    fetch("/api/clinical-records", { signal: controller.signal })
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to fetch clinical records");
+        const records = Array.isArray(data.records) ? data.records : [];
+        setClinicalRecordsCount(records.length);
+        setClinicalVitals(data.latestVitals ?? null);
+        setTreatmentPlans(records.filter((record: TreatmentPlan) => Boolean(record.treatmentPlan)));
+        setClinicalRecordsLoadError(null);
       })
       .catch((err) => {
-        if (err?.name === "AbortError") return;
-        console.warn("Could not fetch appointments, using offline/cached data:", err?.message || err);
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (err instanceof Error && err.name === "AbortError") return;
+        console.error("Could not load clinical record count:", err);
+        setClinicalRecordsLoadError(err instanceof Error ? err.message : "Failed to fetch clinical records");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setClinicalRecordsLoading(false);
       });
 
-    return () => {
-      isMounted = false;
-      controller.abort();
-    };
-  }, [router]);
+    return () => controller.abort();
+  }, [loadAppointments, loadDoctors, router]);
 
-  // Cancel appointment with refund
-  const handleCancel = (id: string) => {
+  const openBooking = (doctor: Doctor | undefined = doctors[0], date?: string) => {
+    if (!doctor) {
+      setActiveTab("doctors");
+      toast.error("No verified doctors are available to book right now.");
+      return;
+    }
+    setBookingInitialDate(date);
+    setSelectedDoctor(doctor);
+  };
+
+  const openEmergencyBooking = (reason?: string) => {
+    const doctor = selectedDoctor || doctors[0];
+    if (!doctor) {
+      setActiveTab("doctors");
+      toast.error("No verified doctors are available for emergency booking.");
+      return;
+    }
+    setSelectedDoctor(doctor);
+    setEmergencyInitialReason(reason);
+    setEmergencyModalOpen(true);
+  };
+
+  const handleCancel = async (id: string) => {
     const targetApp = appointments.find((a) => a.id === id);
     if (!targetApp) return;
 
-    if (
-      confirm(
-        `Are you sure you want to cancel your consultation with ${targetApp.doctorName}? Your refund of ${targetApp.fee || "₹1,500"} will be credited back.`
-      )
-    ) {
+    if (confirm(`Are you sure you want to cancel your consultation with ${targetApp.doctorName}?`)) {
+      try {
+        const res = await fetch(`/api/appointments/${encodeURIComponent(id)}`, { method: "DELETE" });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Failed to cancel appointment");
+
       setAppointments((prev) =>
         prev.map((app) =>
           app.id === id ? { ...app, status: "Cancelled" as const } : app
         )
       );
-      toast.success(
-        `Appointment cancelled successfully. Refund of ${targetApp.fee || "₹1,500"} initiated.`
-      );
+        toast.success("Appointment cancelled successfully.");
+        void loadAppointments();
+      } catch (err) {
+        console.error("Could not cancel appointment:", err);
+        toast.error(err instanceof Error ? err.message : "Failed to cancel appointment");
+      }
     }
   };
 
@@ -278,7 +268,7 @@ export default function DashboardPage() {
           <DashboardSidebar
             activeTab={activeTab}
             setActiveTab={setActiveTab}
-            onOpenBooking={() => setSelectedDoctor(MOCK_DOCTORS[0])}
+            onOpenBooking={() => openBooking()}
             onOpenAIChat={() => setAiChatOpen(true)}
           />
         </div>
@@ -379,37 +369,48 @@ export default function DashboardPage() {
                   {/* 2. AI Clinical Symptom Pre-Triage Banner */}
                   <TriageFloatingBanner
                     onOpenTriage={() => setTriageModalOpen(true)}
-                    onOpenEmergency={() => {
-                      setEmergencyInitialReason("Acute Emergency Consultation");
-                      setEmergencyModalOpen(true);
-                    }}
+                    onOpenEmergency={() => openEmergencyBooking("Acute Emergency Consultation")}
                     onOpenAIChat={() => setAiChatOpen(true)}
                   />
 
                   {/* 3. Live Hospital OPD Queue Tracker */}
-                  <LiveOPDQueueTracker
-                    upcomingAppointment={upcomingAppointments[0]}
-                    onOpenPass={(app) => setSelectedPassAppointment(app)}
-                  />
+                  {upcomingAppointments[0]?.tokenNumber && (
+                    <LiveOPDQueueTracker
+                      upcomingAppointment={upcomingAppointments[0]}
+                      onOpenPass={(app) => setSelectedPassAppointment(app)}
+                    />
+                  )}
 
                   {/* 3. 3 Metrics Cards Row */}
                   <StatCards
-                    completedVisits={completedAppointments.length || 4}
-                    upcomingConsultations={upcomingAppointments.length || 9}
-                    labAnalyses={19}
+                    completedVisits={loading ? null : completedAppointments.length}
+                    upcomingConsultations={loading ? null : upcomingAppointments.length}
+                    clinicalRecords={clinicalRecordsCount}
                   />
+                  {clinicalRecordsLoadError && (
+                    <p role="alert" className="text-xs text-rose-600 dark:text-rose-400">
+                      Could not load clinical record count: {clinicalRecordsLoadError}
+                    </p>
+                  )}
 
                   {/* 4. Clinical Health Vitals (Blood Pressure, Heart Rate, Glucose, SpO2, BMI) */}
-                  <PatientVitalsCard />
+                  <PatientVitalsCard
+                    dashboardData={{
+                      vitals: clinicalVitals,
+                      loading: clinicalRecordsLoading,
+                      error: clinicalRecordsLoadError,
+                    }}
+                  />
 
                   {/* 5. Daily Medication & Hydration Adherence */}
                   <DailyMedicationTracker />
 
                   {/* 6. Plans Done */}
                   <PlansCard
-                    onAddPlan={() => {
-                      setBookingInitialDate(undefined);
-                      setSelectedDoctor(MOCK_DOCTORS[0]);
+                    dashboardData={{
+                      records: treatmentPlans,
+                      loading: clinicalRecordsLoading,
+                      error: clinicalRecordsLoadError,
                     }}
                   />
 
@@ -444,18 +445,28 @@ export default function DashboardPage() {
                     </div>
 
                     {/* Appointments List */}
-                    {filteredAppointments.length === 0 ? (
+                    {appointmentLoadError ? (
+                      <p role="alert" className="py-8 text-center text-sm text-rose-600 dark:text-rose-400">
+                        {appointmentLoadError}
+                      </p>
+                    ) : loading ? (
+                      <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                        Loading appointments…
+                      </p>
+                    ) : filteredAppointments.length === 0 ? (
                       <div className="py-12 text-center">
                         <CalendarCheck className="size-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
                         <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                          {t("no_appointments_match")}
+                          {appointments.length === 0 ? "You have no appointments yet." : t("no_appointments_match")}
                         </p>
-                        <button
-                          onClick={() => setSearchQuery("")}
-                          className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-2 hover:underline cursor-pointer"
-                        >
-                          {t("clear_search_filters")}
-                        </button>
+                        {appointments.length > 0 && (
+                          <button
+                            onClick={() => setSearchQuery("")}
+                            className="text-xs text-blue-600 dark:text-blue-400 font-bold mt-2 hover:underline cursor-pointer"
+                          >
+                            {t("clear_search_filters")}
+                          </button>
+                        )}
                       </div>
                     ) : (
                       <div className="space-y-3">
@@ -499,7 +510,7 @@ export default function DashboardPage() {
                                   <span>{app.specialty}</span>
                                   <span>•</span>
                                   <span className="text-slate-700 dark:text-slate-300 font-medium">
-                                    {app.hospitalName || "Apollo Specialty Hospital, Mumbai"}
+                                    {app.hospitalName || "Hospital not specified"}
                                   </span>
                                 </p>
                                 <div className="flex items-center gap-2 mt-2 text-xs text-slate-600 dark:text-slate-400 font-medium flex-wrap">
@@ -511,10 +522,12 @@ export default function DashboardPage() {
                                     <Clock className="size-3.5 text-slate-400" />
                                     {app.time}
                                   </span>
-                                  <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md font-semibold text-[11px]">
-                                    <Building2 className="size-3" />
-                                    {app.roomNumber || "OPD Chamber 304"}
-                                  </span>
+                                  {app.roomNumber && (
+                                    <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md font-semibold text-[11px]">
+                                      <Building2 className="size-3" />
+                                      {app.roomNumber}
+                                    </span>
+                                  )}
                                   {app.tokenNumber && (
                                     <span className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md font-bold text-[11px]">
                                       {app.tokenNumber}
@@ -530,21 +543,23 @@ export default function DashboardPage() {
                                   {t("consultation_fee")}
                                 </span>
                                 <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                                  {app.fee || "₹1,500"}
+                                  {app.fee || "Fee not available"}
                                 </span>
                               </div>
 
                               {app.status === "Upcoming" && (
                                 <div className="flex items-center gap-2">
-                                  <motion.button
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => setSelectedPassAppointment(app)}
-                                    className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer"
-                                  >
-                                    <QrCode className="size-3.5" />
-                                    <span>{t("digital_opd_pass")}</span>
-                                  </motion.button>
+                                  {app.tokenNumber && (
+                                    <motion.button
+                                      whileHover={{ scale: 1.05 }}
+                                      whileTap={{ scale: 0.95 }}
+                                      onClick={() => setSelectedPassAppointment(app)}
+                                      className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 hover:bg-blue-100 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+                                    >
+                                      <QrCode className="size-3.5" />
+                                      <span>{t("digital_opd_pass")}</span>
+                                    </motion.button>
+                                  )}
                                   <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
@@ -552,7 +567,7 @@ export default function DashboardPage() {
                                     className="px-3 py-1.5 rounded-xl bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400 hover:bg-rose-100 transition-colors text-xs font-bold flex items-center gap-1.5 cursor-pointer"
                                   >
                                     <XCircle className="size-3.5" />
-                                    <span>{t("cancel_and_refund")}</span>
+                                    <span>{t("cancel_appointment")}</span>
                                   </motion.button>
                                 </div>
                               )}
@@ -600,10 +615,7 @@ export default function DashboardPage() {
                   userImage={userImage}
                   appointments={appointments}
                   onCancelAppointment={handleCancel}
-                  onBookDoctor={(dateIso) => {
-                    setBookingInitialDate(dateIso);
-                    setSelectedDoctor(MOCK_DOCTORS[0]);
-                  }}
+                  onBookDoctor={(dateIso) => openBooking(undefined, dateIso)}
                   onOpenPass={(app) => setSelectedPassAppointment(app)}
                   onOpenSettings={() => setActiveTab("settings")}
                 />
@@ -627,7 +639,7 @@ export default function DashboardPage() {
                         Verified Doctors Directory
                       </h2>
                       <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                        Choose a specialist from the landing page to book a consultation
+                        Doctors listed here are loaded from your connected database.
                       </p>
                     </div>
                     <motion.button
@@ -640,7 +652,19 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                    {MOCK_DOCTORS.map((doc, idx) => (
+                    {doctorsLoading ? (
+                      <p className="col-span-full py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                        Loading doctors…
+                      </p>
+                    ) : doctorLoadError ? (
+                      <p role="alert" className="col-span-full py-8 text-center text-sm text-rose-600 dark:text-rose-400">
+                        {doctorLoadError}
+                      </p>
+                    ) : doctors.length === 0 ? (
+                      <p className="col-span-full py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                        No verified doctors are available right now.
+                      </p>
+                    ) : doctors.map((doc, idx) => (
                       <motion.div
                         key={doc.id}
                         initial={{ opacity: 0, y: 20 }}
@@ -652,11 +676,17 @@ export default function DashboardPage() {
                       >
                         <div className="flex gap-3.5 items-start">
                           <Link href={`/doctors/${doc.id}`} className="shrink-0 group/img">
-                            <img
-                              src={doc.user.image}
-                              alt={doc.user.name}
-                              className="size-16 rounded-2xl object-cover ring-2 ring-blue-100 dark:ring-blue-900/40 group-hover/img:scale-105 transition-transform duration-300"
-                            />
+                            {doc.user.image ? (
+                              <img
+                                src={doc.user.image}
+                                alt={doc.user.name}
+                                className="size-16 rounded-2xl object-cover ring-2 ring-blue-100 dark:ring-blue-900/40 group-hover/img:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <span className="size-16 rounded-2xl bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 font-bold flex items-center justify-center">
+                                {doc.user.name.slice(0, 1)}
+                              </span>
+                            )}
                           </Link>
                           <div className="min-w-0">
                             <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full">
@@ -682,7 +712,7 @@ export default function DashboardPage() {
 
                         <div className="pt-4 mt-4 border-t border-slate-200/70 dark:border-slate-700/70 flex items-center justify-between gap-2">
                           <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                            ₹{doc.fee?.toLocaleString() || "1,500"}
+                            {doc.fee == null ? "Fee not available" : `₹${doc.fee.toLocaleString()}`}
                           </span>
                           <div className="flex items-center gap-2">
                             <Link
@@ -694,7 +724,7 @@ export default function DashboardPage() {
                             <motion.button
                               whileHover={{ scale: 1.05 }}
                               whileTap={{ scale: 0.95 }}
-                              onClick={() => setSelectedDoctor(doc)}
+                              onClick={() => openBooking(doc)}
                               className="px-4 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-all cursor-pointer"
                             >
                               Book Visit
@@ -738,7 +768,19 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="space-y-3">
-                    {appointments.map((app, idx) => (
+                    {appointmentLoadError ? (
+                      <p role="alert" className="py-8 text-center text-sm text-rose-600 dark:text-rose-400">
+                        {appointmentLoadError}
+                      </p>
+                    ) : loading ? (
+                      <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                        Loading appointments…
+                      </p>
+                    ) : appointments.length === 0 ? (
+                      <p className="py-8 text-center text-sm text-slate-500 dark:text-slate-400">
+                        You have no appointments yet.
+                      </p>
+                    ) : appointments.map((app, idx) => (
                       <motion.div
                         key={app.id}
                         initial={{ opacity: 0, y: 15 }}
@@ -766,15 +808,17 @@ export default function DashboardPage() {
                             {app.doctorName}
                           </h4>
                           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                            {app.specialty} • <span className="font-semibold text-slate-700 dark:text-slate-300">{app.hospitalName || "Apollo Specialty Hospital"}</span>
+                            {app.specialty} • <span className="font-semibold text-slate-700 dark:text-slate-300">{app.hospitalName || "Hospital not specified"}</span>
                           </p>
                           <div className="flex items-center gap-2 mt-2 text-xs text-slate-600 dark:text-slate-300 font-medium flex-wrap">
                             <span className="flex items-center gap-1" suppressHydrationWarning>
                               <Calendar className="size-3.5 text-slate-400" /> {app.date} at {app.time}
                             </span>
-                            <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md font-semibold text-[11px]">
-                              <Building2 className="size-3" /> {app.roomNumber || "OPD Chamber 304"}
-                            </span>
+                            {app.roomNumber && (
+                              <span className="flex items-center gap-1 text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/40 px-2 py-0.5 rounded-md font-semibold text-[11px]">
+                                <Building2 className="size-3" /> {app.roomNumber}
+                              </span>
+                            )}
                             {app.tokenNumber && (
                               <span className="text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/50 px-2 py-0.5 rounded-md font-bold text-[11px]">
                                 {app.tokenNumber}
@@ -785,26 +829,28 @@ export default function DashboardPage() {
 
                         <div className="flex items-center gap-3">
                           <span className="font-extrabold text-sm text-slate-900 dark:text-white">
-                            {app.fee || "₹1,500"}
+                            {app.fee || "Fee not available"}
                           </span>
                           {app.status === "Upcoming" && (
                             <div className="flex items-center gap-2">
-                              <motion.button
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => setSelectedPassAppointment(app)}
-                                className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1.5 cursor-pointer"
-                              >
-                                <QrCode className="size-3.5" />
-                                <span>OPD Pass</span>
-                              </motion.button>
+                              {app.tokenNumber && (
+                                <motion.button
+                                  whileHover={{ scale: 1.05 }}
+                                  whileTap={{ scale: 0.95 }}
+                                  onClick={() => setSelectedPassAppointment(app)}
+                                  className="px-3 py-1.5 rounded-xl bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 text-xs font-bold hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors flex items-center gap-1.5 cursor-pointer"
+                                >
+                                  <QrCode className="size-3.5" />
+                                  <span>OPD Pass</span>
+                                </motion.button>
+                              )}
                               <motion.button
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => handleCancel(app.id)}
                                 className="px-3 py-1.5 rounded-xl bg-rose-50 text-rose-600 text-xs font-bold hover:bg-rose-100 transition-colors cursor-pointer"
                               >
-                                Cancel & Refund
+                                {t("cancel_appointment")}
                               </motion.button>
                             </div>
                           )}
@@ -830,7 +876,7 @@ export default function DashboardPage() {
                 appointments={appointments}
                 userName={userName}
                 onReturnToOverview={() => setActiveTab("overview")}
-                onOpenBooking={() => setSelectedDoctor(MOCK_DOCTORS[0])}
+                onOpenBooking={() => openBooking()}
               />
             )}
 
@@ -860,6 +906,7 @@ export default function DashboardPage() {
           doctor={selectedDoctor}
           initialDate={bookingInitialDate}
           initialDisease={bookingInitialDisease}
+          onBookingSuccess={() => void loadAppointments()}
           onClose={() => {
             setSelectedDoctor(null);
             setBookingInitialDate(undefined);
@@ -877,8 +924,7 @@ export default function DashboardPage() {
           setBookingInitialDisease(triageSummary);
         }}
         onBookEmergency={(triageSummary) => {
-          setEmergencyInitialReason(triageSummary);
-          setEmergencyModalOpen(true);
+          openEmergencyBooking(triageSummary);
         }}
       />
 
@@ -889,18 +935,10 @@ export default function DashboardPage() {
           setEmergencyModalOpen(false);
           setEmergencyInitialReason(undefined);
         }}
-        doctor={selectedDoctor || MOCK_DOCTORS[0]}
+        doctor={selectedDoctor || doctors[0] || null}
+        patientName={userName}
         initialReason={emergencyInitialReason}
-        onBookingSuccess={() => {
-          fetch("/api/appointments")
-            .then((res) => res.json())
-            .then((data) => {
-              if (data?.appointments) {
-                setAppointments(data.appointments);
-              }
-            })
-            .catch(() => {});
-        }}
+        onBookingSuccess={() => void loadAppointments()}
       />
 
       {/* Digital Hospital OPD Pass Modal */}
@@ -931,8 +969,7 @@ export default function DashboardPage() {
           if (reason) setBookingInitialDisease(reason);
         }}
         onBookEmergency={(reason) => {
-          if (reason) setEmergencyInitialReason(reason);
-          setEmergencyModalOpen(true);
+          openEmergencyBooking(reason);
         }}
         onOpenTriage={() => setTriageModalOpen(true)}
         onNavigateToQueue={() => {

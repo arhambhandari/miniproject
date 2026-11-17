@@ -68,7 +68,7 @@ const translations = {
     faq_q2: "Are the doctors verified?",
     faq_a2: "Yes, every doctor on MediNova goes through a strict verification process checking their medical license, qualifications, and experience.",
     faq_q3: "Can I cancel my appointment?",
-    faq_a3: "Yes, you can cancel or reschedule your appointment up to 2 hours before the scheduled time for a full refund.",
+    faq_a3: "You can cancel an appointment from your dashboard. This app does not currently process refunds.",
     // Footer
     footer_desc: "Making healthcare accessible, transparent, and seamless for everyone.",
     footer_patients: "Patients",
@@ -103,7 +103,7 @@ const translations = {
     you_have: "You have",
     upcoming_single: "upcoming consultation today.",
     upcoming_multiple: "upcoming consultations today.",
-    records_synced_badge: "UHID: MB-98412 • All Vital Records Synced",
+    records_synced_badge: "Clinical records are linked to your account",
     opd_queue_active_badge: "OPD Queue Active",
 
     // OPD Queue Tracker
@@ -128,7 +128,7 @@ const translations = {
 
     // Vitals Card
     vitals_title: "Clinical Health Vitals",
-    vitals_subtitle: "Live synced biometric telemetry with doctor chamber",
+    vitals_subtitle: "Measurements most recently recorded in clinical records",
     blood_pressure: "Blood Pressure",
     heart_rate: "Heart Rate",
     blood_glucose: "Blood Glucose",
@@ -152,7 +152,7 @@ const translations = {
     status_completed: "Completed",
     status_cancelled: "Cancelled",
     consultation_fee: "Consultation Fee",
-    cancel_and_refund: "Cancel & Refund",
+    cancel_appointment: "Cancel Appointment",
     write_review: "Write Review",
     reviewed: "Reviewed",
     view_on_doctor_page: "View on Doctor Page",
@@ -211,7 +211,7 @@ const translations = {
     faq_q2: "क्या डॉक्टर सत्यापित हैं?",
     faq_a2: "हां, MediNova पर हर डॉक्टर एक सख्त सत्यापन प्रक्रिया से गुजरता है जिसमें उनके मेडिकल लाइसेंस, योग्यता और अनुभव की जांच की जाती है।",
     faq_q3: "क्या मैं अपना अपॉइंटमेंट रद्द कर सकता हूँ?",
-    faq_a3: "हां, आप पूरे रिफंड के लिए निर्धारित समय से 2 घंटे पहले तक अपना अपॉइंटमेंट रद्द या पुनर्निर्धारित कर सकते हैं।",
+    faq_a3: "आप अपने डैशबोर्ड से अपॉइंटमेंट रद्द कर सकते हैं। यह ऐप अभी रिफंड प्रोसेस नहीं करता।",
     // Footer
     footer_desc: "सभी के लिए स्वास्थ्य सेवा को सुलभ, पारदर्शी और सहज बनाना।",
     footer_patients: "मरीज",
@@ -246,7 +246,7 @@ const translations = {
     you_have: "आपके पास",
     upcoming_single: "आज 1 आगामी परामर्श है।",
     upcoming_multiple: "आज आगामी परामर्श हैं।",
-    records_synced_badge: "UHID: MB-98412 • सभी स्वास्थ्य रिकॉर्ड सिंक किए गए",
+    records_synced_badge: "क्लीनिकल रिकॉर्ड आपके खाते से जुड़े हैं",
     opd_queue_active_badge: "ओपीडी कतार सक्रिय",
 
     // OPD Queue Tracker
@@ -271,7 +271,7 @@ const translations = {
 
     // Vitals Card
     vitals_title: "मरीज के स्वास्थ्य आंकड़े",
-    vitals_subtitle: "डॉक्टर कक्ष के साथ लाइव सिंक बायोमेट्रिक आंकड़े",
+    vitals_subtitle: "क्लीनिकल रिकॉर्ड में हाल ही में दर्ज माप",
     blood_pressure: "रक्तचाप (बीपी)",
     heart_rate: "हृदय गति",
     blood_glucose: "रक्त शर्करा",
@@ -295,7 +295,7 @@ const translations = {
     status_completed: "पूर्ण",
     status_cancelled: "रद्द",
     consultation_fee: "परामर्श शुल्क",
-    cancel_and_refund: "रद्द और रिफंड करें",
+    cancel_appointment: "अपॉइंटमेंट रद्द करें",
     write_review: "समीक्षा लिखें",
     reviewed: "समीक्षित",
     view_on_doctor_page: "डॉक्टर पेज पर देखें",

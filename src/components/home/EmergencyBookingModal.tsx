@@ -3,12 +3,10 @@
 import React, { useState } from "react";
 import { 
   X, 
-  AlertTriangle, 
   PhoneCall, 
   Siren, 
   MapPin, 
   ShieldAlert, 
-  Clock, 
   User, 
   Phone, 
   Activity, 
@@ -16,10 +14,9 @@ import {
   ArrowRight, 
   Loader2, 
   Building2,
-  Stethoscope,
   HeartPulse
 } from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import type { Doctor } from "@/types";
 import type { Appointment } from "@/types";
@@ -28,6 +25,7 @@ interface EmergencyBookingModalProps {
   isOpen: boolean;
   onClose: () => void;
   doctor?: Doctor | null;
+  patientName?: string;
   initialReason?: string;
   onBookingSuccess?: (appointment: Appointment, emergencyToken: string) => void;
 }
@@ -36,50 +34,29 @@ export function EmergencyBookingModal({
   isOpen,
   onClose,
   doctor,
+  patientName: initialPatientName = "Patient",
   initialReason,
   onBookingSuccess,
 }: EmergencyBookingModalProps) {
-  const [patientName, setPatientName] = useState("Rahul Sharma");
-  const [patientContact, setPatientContact] = useState("+91 98765 43210");
+  const [patientName, setPatientName] = useState(initialPatientName);
+  const [patientContact, setPatientContact] = useState("");
   const [reasonOverride, setReasonOverride] = useState<string | null>(null);
-  const reason = reasonOverride ?? initialReason ?? "Acute Chest Pain & Breathing Discomfort";
+  const reason = reasonOverride ?? initialReason ?? "";
   const [loading, setLoading] = useState(false);
   const [confirmedToken, setConfirmedToken] = useState<string | null>(null);
-  const [fetchedDoctor, setFetchedDoctor] = useState<Doctor | null>(null);
 
-  React.useEffect(() => {
-    if (doctor && doctor.id !== "doc_1") return;
-    let isActive = true;
-    void fetch("/api/doctors")
-      .then((res) => res.json())
-      .then((data: unknown) => {
-        if (!isActive) return;
-        const doctors = Array.isArray(data)
-          ? data
-          : typeof data === "object" && data !== null && "doctors" in data && Array.isArray(data.doctors)
-            ? data.doctors
-            : [];
-        const firstDoctor = doctors[0] as Doctor | undefined;
-        if (firstDoctor) setFetchedDoctor(firstDoctor);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to load emergency booking doctor:", error);
-      });
-    return () => {
-      isActive = false;
-    };
-  }, [doctor]);
-
-  const activeDoctor = doctor && doctor.id !== "doc_1" ? doctor : fetchedDoctor;
   if (!isOpen) return null;
 
-  const assignedDoctorId = activeDoctor?.id || doctor?.id || "doc_1";
-  const doctorDisplayName = activeDoctor?.user?.name || doctor?.user?.name || "Dr. Vikramaditya Rathore";
-  const hospitalName = activeDoctor?.hospitalName || doctor?.hospitalName || "Apollo Specialty Hospital, Mumbai";
-  const chamberRoom = "OPD Chamber 304 / Emergency Bay 2";
+  const assignedDoctorId = doctor?.id || "";
+  const doctorDisplayName = doctor?.user?.name || "Doctor not selected";
+  const hospitalName = doctor?.hospitalName || "Hospital not specified";
 
   const handleConfirmEmergency = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!assignedDoctorId) {
+      toast.error("Select an available doctor before submitting this request.");
+      return;
+    }
     setLoading(true);
 
     try {
@@ -98,7 +75,10 @@ export function EmergencyBookingModal({
 
       const data = await res.json();
       if (res.ok && data.success) {
-        const token = data.emergencyToken || data.appointment?.tokenNumber || "Token #EM-01";
+        const token = data.emergencyToken || data.appointment?.tokenNumber;
+        if (typeof token !== "string" || !token) {
+          throw new Error("Emergency request was saved without a queue token. Please contact the clinic.");
+        }
         setConfirmedToken(token);
         toast.success(`🚨 Emergency priority token ${token} confirmed!`, {
           duration: 6000,
@@ -111,7 +91,7 @@ export function EmergencyBookingModal({
       }
     } catch (err) {
       console.error("Emergency booking failed:", err);
-      toast.error("Network error processing emergency admission.");
+      toast.error(err instanceof Error ? err.message : "Failed to submit emergency booking.");
     } finally {
       setLoading(false);
     }
@@ -188,13 +168,6 @@ export function EmergencyBookingModal({
                   >
                     <span>🚑 108 Ambulance</span>
                   </button>
-                  <button
-                    type="button"
-                    onClick={() => handleDialHotline("+912224938888", "Apollo ER Desk")}
-                    className="px-3 py-1.5 rounded-xl bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 text-slate-800 dark:text-slate-200 font-bold text-xs flex items-center gap-1 cursor-pointer transition-colors"
-                  >
-                    <span>🏥 ER Desk</span>
-                  </button>
                 </div>
               </div>
 
@@ -205,20 +178,20 @@ export function EmergencyBookingModal({
                     Assigned On-Duty Specialist
                   </span>
                   <span className="text-[10px] font-black px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-900">
-                    Chamber Active
+                    Doctor selected
                   </span>
                 </div>
 
                 <div className="flex items-center gap-3">
                   <div className="size-11 rounded-xl bg-blue-600 text-white font-extrabold flex items-center justify-center text-sm shadow-xs shrink-0">
-                    VR
+                    {doctorDisplayName.charAt(0)}
                   </div>
                   <div>
                     <h4 className="font-extrabold text-sm text-slate-900 dark:text-white">
                       {doctorDisplayName}
                     </h4>
                     <p className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
-                      Neuro-Oncology & Emergency OPD
+                      {doctor?.specialization || "Emergency consultation"}
                     </p>
                   </div>
                 </div>
@@ -230,22 +203,8 @@ export function EmergencyBookingModal({
                   </span>
                   <span className="flex items-center gap-1 font-bold text-rose-600 dark:text-rose-400">
                     <MapPin className="size-3.5" />
-                    {chamberRoom}
+                    Emergency booking request
                   </span>
-                </div>
-              </div>
-
-              {/* EHR Medical Alert Card */}
-              <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 text-xs text-amber-900 dark:text-amber-200 space-y-1">
-                <div className="font-bold flex items-center gap-1.5 text-amber-800 dark:text-amber-300">
-                  <Activity className="size-3.5" /> Patient EHR Synced Alerts:
-                </div>
-                <div className="flex flex-wrap items-center gap-3 text-[11px]">
-                  <span>Blood Group: <strong>O+ Positive</strong></span>
-                  <span>•</span>
-                  <span>Drug Allergies: <strong className="text-rose-700 dark:text-rose-400">Penicillin, Sulfa</strong></span>
-                  <span>•</span>
-                  <span>UHID: <strong>MB-98412</strong></span>
                 </div>
               </div>
 
@@ -355,7 +314,7 @@ export function EmergencyBookingModal({
                   Emergency Admission Confirmed!
                 </h4>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-sm mx-auto">
-                  Your token has been injected ahead of scheduled visits and broadcast to the doctor&apos;s live chamber console.
+                  Your emergency appointment request has been recorded. Follow the clinic&apos;s instructions for your next steps.
                 </p>
               </div>
 
@@ -371,11 +330,7 @@ export function EmergencyBookingModal({
                   {confirmedToken}
                 </div>
                 <div className="flex items-center justify-center gap-3 text-xs text-slate-600 dark:text-slate-300 pt-1">
-                  <span className="font-bold">Chamber 304</span>
-                  <span>•</span>
-                  <span>Estimated Wait: <strong>Immediate (&lt; 5m)</strong></span>
-                  <span>•</span>
-                  <span>Queue Position: <strong className="text-emerald-600">Next</strong></span>
+                  <span>Room and waiting time will be confirmed by the clinic.</span>
                 </div>
               </div>
 

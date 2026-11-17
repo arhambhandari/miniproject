@@ -10,8 +10,6 @@ import {
   Thermometer, 
   ShieldCheck,
   Lock,
-  Stethoscope,
-  Info
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { toast } from "sonner";
@@ -19,91 +17,102 @@ import { useLanguage } from "@/components/LanguageContext";
 
 interface VitalMetric {
   id: string;
+  field: "bloodPressure" | "heartRate" | "bloodSugar" | "spo2" | "weight" | "temperature";
   name: string;
-  value: string;
   unit: string;
-  status: "Normal" | "Optimal" | "Attention";
   icon: React.ElementType;
   color: string;
   bgColor: string;
-  lastChecked: string;
-  isDoctorOnly?: boolean;
 }
 
-const INITIAL_VITALS: VitalMetric[] = [
+export interface LatestVitals {
+  bloodPressure: string | null;
+  heartRate: string | null;
+  bloodSugar: string | null;
+  spo2: string | null;
+  weight: string | null;
+  temperature: string | null;
+  recordedAt: string | null;
+  doctorName: string | null;
+  diagnosis?: string | null;
+}
+
+export interface PatientVitalsCardData {
+  vitals: LatestVitals | null;
+  loading: boolean;
+  error: string | null;
+}
+
+interface PatientVitalsCardProps {
+  dashboardData?: PatientVitalsCardData;
+}
+
+const VITAL_METRICS: VitalMetric[] = [
   {
     id: "bp",
+    field: "bloodPressure",
     name: "Blood Pressure",
-    value: "120/80",
     unit: "mmHg",
-    status: "Normal",
     icon: HeartPulse,
     color: "text-rose-600 dark:text-rose-400",
     bgColor: "bg-rose-50 dark:bg-rose-900/30",
-    lastChecked: "Doctor Verified (OPD Exam)",
-    isDoctorOnly: true,
   },
   {
     id: "pulse",
+    field: "heartRate",
     name: "Heart Rate",
-    value: "72",
     unit: "bpm",
-    status: "Optimal",
     icon: Activity,
     color: "text-emerald-600 dark:text-emerald-400",
     bgColor: "bg-emerald-50 dark:bg-emerald-900/30",
-    lastChecked: "Today, 9:30 AM",
   },
   {
     id: "glucose",
+    field: "bloodSugar",
     name: "Blood Sugar (Fasting)",
-    value: "94",
     unit: "mg/dL",
-    status: "Normal",
     icon: Droplet,
     color: "text-amber-600 dark:text-amber-400",
     bgColor: "bg-amber-50 dark:bg-amber-900/30",
-    lastChecked: "Yesterday",
   },
   {
     id: "spo2",
+    field: "spo2",
     name: "Oxygen (SpO2)",
-    value: "99",
     unit: "%",
-    status: "Optimal",
     icon: Wind,
-    color: "text-blue-600 dark:blue-400",
+    color: "text-blue-600 dark:text-blue-400",
     bgColor: "bg-blue-50 dark:bg-blue-900/30",
-    lastChecked: "Today, 9:30 AM",
   },
   {
     id: "bmi",
-    name: "Body Weight & BMI",
-    value: "68 kg",
-    unit: "22.5 BMI",
-    status: "Normal",
+    field: "weight",
+    name: "Body Weight",
+    unit: "",
     icon: Scale,
     color: "text-indigo-600 dark:text-indigo-400",
     bgColor: "bg-indigo-50 dark:bg-indigo-900/30",
-    lastChecked: "Last week",
   },
   {
     id: "temp",
+    field: "temperature",
     name: "Body Temperature",
-    value: "98.4",
     unit: "°F",
-    status: "Normal",
     icon: Thermometer,
     color: "text-teal-600 dark:text-teal-400",
     bgColor: "bg-teal-50 dark:bg-teal-900/30",
-    lastChecked: "Today, 9:30 AM",
   },
 ];
 
-export function PatientVitalsCard() {
+export function PatientVitalsCard({ dashboardData }: PatientVitalsCardProps = {}) {
   const { language, t } = useLanguage();
-  const [vitals, setVitals] = useState<VitalMetric[]>(INITIAL_VITALS);
-  const [latestDoctorInfo, setLatestDoctorInfo] = useState<{ doctorName?: string; diagnosis?: string } | null>(null);
+  const [fetchedVitals, setFetchedVitals] = useState<LatestVitals | null>(null);
+  const [fetchedLoading, setFetchedLoading] = useState(true);
+  const [fetchedError, setFetchedError] = useState<string | null>(null);
+  const hasDashboardData = dashboardData !== undefined;
+  const vitals = hasDashboardData ? dashboardData.vitals : fetchedVitals;
+  const loading = hasDashboardData ? dashboardData.loading : fetchedLoading;
+  const loadError = hasDashboardData ? dashboardData.error : fetchedError;
 
   const getVitalLabel = (id: string, defaultName: string) => {
     switch (id) {
@@ -118,56 +127,29 @@ export function PatientVitalsCard() {
   };
 
   useEffect(() => {
+    if (hasDashboardData) return;
+
     const controller = new AbortController();
     fetch("/api/clinical-records", { signal: controller.signal })
-      .then((res) => {
-        if (!res.ok) return { records: [], latestVitals: null };
-        return res.json();
-      })
-      .then((data) => {
-        if (data?.latestVitals) {
-          const lv = data.latestVitals;
-          setLatestDoctorInfo({
-            doctorName: lv.doctorName,
-            diagnosis: lv.diagnosis,
-          });
-
-          setVitals((prev) =>
-            prev.map((v) => {
-              if (v.id === "bp" && lv.bloodPressure) {
-                return { 
-                  ...v, 
-                  value: lv.bloodPressure, 
-                  lastChecked: lv.doctorName ? `By ${lv.doctorName}` : "Doctor Verified" 
-                };
-              }
-              if (v.id === "pulse" && lv.heartRate) {
-                return { ...v, value: lv.heartRate, lastChecked: lv.doctorName ? `By ${lv.doctorName}` : "Recorded today" };
-              }
-              if (v.id === "glucose" && lv.bloodSugar) {
-                return { ...v, value: lv.bloodSugar, lastChecked: lv.doctorName ? `By ${lv.doctorName}` : "Recorded today" };
-              }
-              if (v.id === "spo2" && lv.oxygenLevel) {
-                return { ...v, value: lv.oxygenLevel, lastChecked: lv.doctorName ? `By ${lv.doctorName}` : "Recorded today" };
-              }
-              if (v.id === "bmi" && lv.weight) {
-                return { ...v, value: lv.weight, lastChecked: lv.doctorName ? `By ${lv.doctorName}` : "Recorded today" };
-              }
-              if (v.id === "temp" && lv.temperature) {
-                return { ...v, value: lv.temperature, lastChecked: lv.doctorName ? `By ${lv.doctorName}` : "Recorded today" };
-              }
-              return v;
-            })
-          );
+      .then(async (res) => {
+        const data = await res.json();
+        if (!res.ok) {
+          throw new Error(data.error || "Failed to fetch clinical vitals");
         }
+        setFetchedVitals(data.latestVitals ?? null);
+        setFetchedError(null);
       })
       .catch((err) => {
         if (err?.name === "AbortError") return;
-        console.warn("Could not fetch patient vitals, using defaults:", err?.message || err);
+        console.error("Could not fetch patient vitals:", err);
+        setFetchedError(err instanceof Error ? err.message : "Failed to fetch clinical vitals");
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setFetchedLoading(false);
       });
 
     return () => controller.abort();
-  }, []);
+  }, [hasDashboardData]);
 
   const handleVitalTileClick = (vitalId: string, vitalName: string) => {
     if (vitalId === "bp") {
@@ -200,7 +182,7 @@ export function PatientVitalsCard() {
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="text-[10px] font-bold px-2.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 dark:text-emerald-300 text-emerald-700 flex items-center gap-1">
-              <ShieldCheck className="size-3" /> {language === "hi" ? "ABHA / अस्पताल रिकॉर्ड सिंक" : "ABHA / Hospital EHR Synced"}
+              <ShieldCheck className="size-3" /> {language === "hi" ? "डॉक्टर द्वारा दर्ज" : "Doctor-recorded measurements"}
             </span>
           </div>
           <h2 className="text-lg font-bold text-slate-900 dark:text-white">
@@ -209,6 +191,11 @@ export function PatientVitalsCard() {
           <p className="text-xs text-slate-500 dark:text-slate-400">
             {t("vitals_subtitle")}
           </p>
+          {loadError && (
+            <p role="alert" className="mt-2 text-xs text-rose-600 dark:text-rose-400">
+              {loadError}
+            </p>
+          )}
         </div>
 
         <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -225,9 +212,14 @@ export function PatientVitalsCard() {
 
       {/* Grid of 6 Vitals */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
-        {vitals.map((v, i) => {
+        {VITAL_METRICS.map((v, i) => {
           const Icon = v.icon;
           const isBp = v.id === "bp";
+          const value = vitals?.[v.field];
+          const hasValue = typeof value === "string" && value.length > 0;
+          const recordedAt = vitals?.recordedAt
+            ? new Date(vitals.recordedAt).toLocaleString(language === "hi" ? "hi-IN" : "en-US")
+            : null;
           return (
             <motion.div
               key={v.id}
@@ -260,9 +252,9 @@ export function PatientVitalsCard() {
                     <span>{language === "hi" ? "केवल डॉक्टर" : "Doctor Only"}</span>
                   </span>
                 ) : (
-                  <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                    <Lock className="size-2 text-emerald-600 dark:text-emerald-400" />
-                    <span>{v.status === "Optimal" || v.status === "Normal" ? (language === "hi" ? "सामान्य" : v.status) : v.status}</span>
+                  <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                    <Lock className="size-2 text-slate-500 dark:text-slate-400" />
+                    <span>{hasValue ? (language === "hi" ? "दर्ज" : "Recorded") : (language === "hi" ? "कोई रिकॉर्ड नहीं" : "No record")}</span>
                   </span>
                 )}
               </div>
@@ -276,14 +268,12 @@ export function PatientVitalsCard() {
                 </div>
                 <div className="flex items-baseline gap-1 mt-0.5">
                   <span className="text-lg font-black text-slate-900 dark:text-white">
-                    {v.value}
+                    {loading ? "…" : hasValue ? value : "—"}
                   </span>
-                  <span className="text-[10px] font-medium text-slate-400">
-                    {v.unit}
-                  </span>
+                  {v.unit && <span className="text-[10px] font-medium text-slate-400">{v.unit}</span>}
                 </div>
                 <span className="text-[9px] text-slate-400 mt-1 block truncate">
-                  {v.lastChecked}
+                  {recordedAt || (loading ? (language === "hi" ? "लोड हो रहा है" : "Loading") : (language === "hi" ? "कोई रिकॉर्ड नहीं" : "No record"))}
                 </span>
               </div>
             </motion.div>
@@ -291,15 +281,15 @@ export function PatientVitalsCard() {
         })}
       </div>
 
-      {latestDoctorInfo?.diagnosis && (
+      {vitals?.diagnosis && (
         <div className="mt-4 p-3.5 rounded-2xl bg-blue-50/60 dark:bg-blue-950/30 border border-blue-200/70 dark:border-blue-800/60 flex items-center justify-between text-xs">
           <span className="text-slate-700 dark:text-slate-200">
             <strong className="text-blue-700 dark:text-blue-400">Attending Doctor Assessment:</strong>{" "}
-            {latestDoctorInfo.diagnosis}
+            {vitals.diagnosis}
           </span>
-          {latestDoctorInfo.doctorName && (
+          {vitals.doctorName && (
             <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 shrink-0 ml-2">
-              — {latestDoctorInfo.doctorName}
+              — {vitals.doctorName}
             </span>
           )}
         </div>

@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 
 export const dynamic = "force-dynamic";
 
-// GET: Fetch patient vitals (blending doctor clinical measurements with patient home tracking)
+// GET: Fetch the latest vitals recorded in a clinical record.
 export async function GET() {
   try {
     const session = await auth();
@@ -28,27 +28,24 @@ export async function GET() {
       },
     });
 
-    if (!patientProfile) {
-      return NextResponse.json({ vitals: null });
-    }
+    if (!patientProfile) return NextResponse.json({ latestVitals: null });
 
     const latestClinical = patientProfile.clinicalRecords[0] || null;
 
     return NextResponse.json({
-      latestVitals: {
-        // Blood pressure is strictly sourced from clinical records (doctor-only)
-        bloodPressure: latestClinical?.bloodPressure || "120/80",
-        doctorName: latestClinical?.doctor?.user?.name || "Attending Physician",
-        recordedAt: latestClinical?.createdAt || null,
-        isDoctorOnlyBP: true,
-
-        // Other vitals
-        heartRate: latestClinical?.heartRate || "72",
-        bloodSugar: latestClinical?.bloodSugar || "94",
-        spo2: latestClinical?.spo2 || "99",
-        weight: latestClinical?.weight || "68 kg",
-        temperature: latestClinical?.temperature || "98.4",
-      },
+      latestVitals: latestClinical
+        ? {
+            bloodPressure: latestClinical.bloodPressure,
+            doctorName: latestClinical.doctor?.user?.name || null,
+            recordedAt: latestClinical.createdAt,
+            isDoctorOnlyBP: true,
+            heartRate: latestClinical.heartRate,
+            bloodSugar: latestClinical.bloodSugar,
+            spo2: latestClinical.spo2,
+            weight: latestClinical.weight,
+            temperature: latestClinical.temperature,
+          }
+        : null,
     });
   } catch (err: unknown) {
     console.error("GET /api/patient/vitals error:", err);
@@ -56,7 +53,7 @@ export async function GET() {
   }
 }
 
-// POST: Clinical vitals update (Strictly restricted to doctors; patients can only log medication adherence)
+// POST: Patients cannot write clinical vitals. Doctors must use /api/clinical-records.
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -90,20 +87,10 @@ export async function POST(req: Request) {
       );
     }
 
-    // Doctor updates vitals
-    const { heartRate, bloodSugar, spo2, weight, temperature } = body;
-    return NextResponse.json({
-      success: true,
-      message: "Clinical vitals recorded successfully by physician.",
-      updatedVitals: {
-        bloodPressure,
-        heartRate,
-        bloodSugar,
-        spo2,
-        weight,
-        temperature,
-      },
-    });
+    return NextResponse.json(
+      { error: "Clinical measurements must be recorded through POST /api/clinical-records." },
+      { status: 405 }
+    );
   } catch (err: unknown) {
     console.error("POST /api/patient/vitals error:", err);
     return NextResponse.json({ error: getErrorMessage(err, "Failed to process vitals") }, { status: 500 });

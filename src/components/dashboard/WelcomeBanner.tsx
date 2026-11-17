@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Sparkles, Calendar } from "lucide-react";
+import { Calendar } from "lucide-react";
 import { motion } from "framer-motion";
 import { useLanguage } from "@/components/LanguageContext";
 
@@ -22,7 +22,7 @@ const dayNamesHi: Record<string, string> = {
 
 export function WelcomeBanner({
   userName = "Patient",
-  upcomingCount = 2,
+  upcomingCount = 0,
 }: WelcomeBannerProps) {
   const { language, t } = useLanguage();
   const [currentDateTime, setCurrentDateTime] = useState("");
@@ -114,49 +114,6 @@ export function WelcomeBanner({
             </p>
           </div>
 
-          <div className="flex items-center gap-2.5 pt-1 flex-wrap">
-            <motion.div
-              whileHover={{ scale: 1.03 }}
-              className="flex items-center gap-1.5 text-xs text-blue-100 bg-white/10 px-3 py-1.5 rounded-xl backdrop-blur-sm border border-white/10 cursor-default"
-            >
-              <Sparkles className="size-3.5 text-amber-300 animate-spin" style={{ animationDuration: "8s" }} />
-              <span>{t("records_synced_badge")}</span>
-            </motion.div>
-            <span className="text-[11px] font-semibold bg-emerald-400/20 text-emerald-200 border border-emerald-400/30 px-2.5 py-1 rounded-xl">
-              {t("opd_queue_active_badge")}
-            </span>
-
-            {/* Health Score Mini Ring */}
-            <motion.div
-              whileHover={{ scale: 1.05 }}
-              className="flex items-center gap-2 px-3 py-1 rounded-xl bg-white/15 backdrop-blur-md border border-white/20 text-xs text-white cursor-default"
-            >
-              <div className="relative size-4 flex items-center justify-center">
-                <svg className="size-full -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-white/25"
-                    strokeWidth="4"
-                    stroke="currentColor"
-                    fill="none"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                  <motion.path
-                    className="text-emerald-300"
-                    strokeWidth="4"
-                    strokeDasharray="94, 100"
-                    strokeLinecap="round"
-                    stroke="currentColor"
-                    fill="none"
-                    initial={{ pathLength: 0 }}
-                    animate={{ pathLength: 1 }}
-                    transition={{ duration: 1.5, ease: "easeOut" }}
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                  />
-                </svg>
-              </div>
-              <span className="font-bold text-[11px]">94% Health Score</span>
-            </motion.div>
-          </div>
         </motion.div>
 
         {/* Right: Friendly Doctor Vector Illustration with floating bobbing & radiant aura */}

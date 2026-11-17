@@ -218,6 +218,45 @@ export async function PATCH(req: Request) {
       return NextResponse.json({ error: "Invalid medication update details" }, { status: 400 });
     }
 
+    const userRole = session.user.role || "PATIENT";
+    let ownerFilter: Prisma.MedicationWhereInput;
+    if (userRole === "PATIENT") {
+      if (daysRemaining !== undefined || instruction !== undefined || dosage !== undefined) {
+        return NextResponse.json(
+          { error: "Patients can only update medication adherence" },
+          { status: 403 }
+        );
+      }
+
+      const patientProfile = await prisma.patientProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (!patientProfile) {
+        return NextResponse.json({ error: "Patient profile not found" }, { status: 404 });
+      }
+      ownerFilter = { patientId: patientProfile.id };
+    } else if (userRole === "DOCTOR") {
+      const doctorProfile = await prisma.doctorProfile.findUnique({
+        where: { userId: session.user.id },
+        select: { id: true },
+      });
+      if (!doctorProfile) {
+        return NextResponse.json({ error: "Doctor profile not found" }, { status: 404 });
+      }
+      ownerFilter = { doctorId: doctorProfile.id };
+    } else {
+      return NextResponse.json({ error: "Not authorized to update medications" }, { status: 403 });
+    }
+
+    const medication = await prisma.medication.findFirst({
+      where: { id, ...ownerFilter },
+      select: { id: true },
+    });
+    if (!medication) {
+      return NextResponse.json({ error: "Medication not found" }, { status: 404 });
+    }
+
     const updateData: Prisma.MedicationUpdateInput = {};
     if (typeof taken === "boolean") {
       updateData.taken = taken;
@@ -230,7 +269,7 @@ export async function PATCH(req: Request) {
     if (dosage) updateData.dosage = dosage.trim();
 
     const updated = await prisma.medication.update({
-      where: { id },
+      where: { id: medication.id },
       data: updateData,
     });
 

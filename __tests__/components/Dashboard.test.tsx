@@ -6,6 +6,8 @@ import { RightPanel } from "@/components/dashboard/RightPanel";
 import { SettingsView } from "@/components/dashboard/SettingsView";
 import { NotificationsView } from "@/components/dashboard/NotificationsView";
 import { PatientVitalsCard } from "@/components/dashboard/PatientVitalsCard";
+import { DailyMedicationTracker } from "@/components/dashboard/DailyMedicationTracker";
+import { MedicalRecordsView } from "@/components/dashboard/MedicalRecordsView";
 import { LiveOPDQueueTracker } from "@/components/dashboard/LiveOPDQueueTracker";
 import { WelcomeBanner } from "@/components/dashboard/WelcomeBanner";
 import { StatCards } from "@/components/dashboard/StatCards";
@@ -28,11 +30,11 @@ describe("Dashboard Components", () => {
     expect(screen.getByText(/3 upcoming consultations/i)).toBeInTheDocument();
   });
 
-  it("renders StatCards with In-Clinic OPD, Prescriptions, and Laboratory work metrics", () => {
-    render(<StatCards completedVisits={4} upcomingConsultations={9} labAnalyses={19} />);
-    expect(screen.getByText("In-Clinic OPD")).toBeInTheDocument();
-    expect(screen.getByText(/Prescriptions/i)).toBeInTheDocument();
-    expect(screen.getByText(/Diagnostics|Laboratory/i)).toBeInTheDocument();
+  it("renders StatCards with live appointment and record metric labels", () => {
+    render(<StatCards completedVisits={4} upcomingConsultations={9} clinicalRecords={19} />);
+    expect(screen.getByText("Completed visits")).toBeInTheDocument();
+    expect(screen.getByText("Upcoming consultations")).toBeInTheDocument();
+    expect(screen.getByText("Medical records")).toBeInTheDocument();
   });
 
   it("renders ScheduledEventsCard with completion rate and breakdown", () => {
@@ -51,33 +53,23 @@ describe("Dashboard Components", () => {
     expect(screen.getByText("Follow-up meetings")).toBeInTheDocument();
   });
 
-  it("renders PlansCard with progress bars and Add plan button", () => {
+  it("renders recorded treatment plans", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        records: [{
+          id: "plan-1",
+          diagnosis: "Seasonal allergy",
+          treatmentPlan: "Follow up in two weeks",
+          createdAt: "2026-01-01T10:00:00.000Z",
+          doctor: { user: { name: "Dr. Test" } },
+        }],
+      }),
+    } as Response);
+
     render(<PlansCard />);
-    expect(screen.getByText("My Plans Done")).toBeInTheDocument();
-    expect(screen.getByText("Consultations")).toBeInTheDocument();
-    expect(screen.getByText("Analysis & Diagnostics")).toBeInTheDocument();
-    expect(screen.getByText("Follow-up Meetings")).toBeInTheDocument();
-    expect(screen.getByText("Add plan")).toBeInTheDocument();
-  });
-
-  it("allows toggling time range dropdown and switching period in PlansCard", () => {
-    render(<PlansCard />);
-
-    // Click the time range dropdown button
-    const toggleButton = screen.getByRole("button", { name: /today/i });
-    fireEvent.click(toggleButton);
-
-    // Check that dropdown menu appeared with options
-    expect(screen.getByText("This Week")).toBeInTheDocument();
-    expect(screen.getByText("This Month")).toBeInTheDocument();
-
-    // Select 'This Week'
-    fireEvent.click(screen.getByText("This Week"));
-
-    // Verify 'This Week' is now active
-    expect(screen.getAllByText("This Week").length).toBeGreaterThan(0);
-    // Verify updated completion text for This Week (e.g. 9 of 11 completed)
-    expect(screen.getByText("9 of 11 completed")).toBeInTheDocument();
+    expect(await screen.findByText("Seasonal allergy")).toBeInTheDocument();
+    expect(screen.getByText("Follow up in two weeks")).toBeInTheDocument();
   });
 
   it("renders RightPanel with dynamic calendar and today's schedule", () => {
@@ -174,16 +166,109 @@ describe("Dashboard Components", () => {
     expect(onReturn).toHaveBeenCalledTimes(1);
   });
 
-  it("renders PatientVitalsCard with clinical health biometrics", () => {
+  it("renders recorded clinical vitals from the API", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        records: [],
+        latestVitals: {
+          bloodPressure: "120/80",
+          heartRate: "72",
+          bloodSugar: "94",
+          spo2: "99",
+          weight: "68 kg",
+          temperature: "98.4",
+          recordedAt: "2026-01-01T10:00:00.000Z",
+          doctorName: "Dr. Test",
+        },
+      }),
+    } as Response);
+
     render(<PatientVitalsCard />);
 
     expect(screen.getByText("Clinical Health Vitals")).toBeInTheDocument();
     expect(screen.getByText("Blood Pressure")).toBeInTheDocument();
-    expect(screen.getByText("120/80")).toBeInTheDocument();
+    expect(await screen.findByText("120/80")).toBeInTheDocument();
     expect(screen.getByText("Heart Rate")).toBeInTheDocument();
     expect(screen.getByText("72")).toBeInTheDocument();
     expect(screen.getByText(/Oxygen/i)).toBeInTheDocument();
     expect(screen.getByText("99")).toBeInTheDocument();
+  });
+
+  it("reuses dashboard clinical data without refetching records", () => {
+    global.fetch = jest.fn();
+    const records = [{
+      id: "record-1",
+      diagnosis: "Seasonal allergy",
+      treatmentPlan: "Follow up in two weeks",
+      createdAt: "2026-01-01T10:00:00.000Z",
+      doctor: { user: { name: "Dr. Test" } },
+    }];
+
+    render(
+      <>
+        <PatientVitalsCard
+          dashboardData={{
+            vitals: {
+              bloodPressure: "120/80",
+              heartRate: null,
+              bloodSugar: null,
+              spo2: null,
+              weight: null,
+              temperature: null,
+              recordedAt: null,
+              doctorName: null,
+            },
+            loading: false,
+            error: null,
+          }}
+        />
+        <PlansCard dashboardData={{ records, loading: false, error: null }} />
+      </>
+    );
+
+    expect(screen.getByText("120/80")).toBeInTheDocument();
+    expect(screen.getByText("Follow up in two weeks")).toBeInTheDocument();
+    expect(global.fetch).not.toHaveBeenCalled();
+  });
+
+  it("does not show invented vitals when no clinical record exists", async () => {
+    render(<PatientVitalsCard />);
+    expect(await screen.findAllByText("—")).toHaveLength(6);
+  });
+
+  it("shows an empty state instead of demo medications when none are prescribed", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ medications: [] }),
+    } as Response);
+
+    render(<DailyMedicationTracker />);
+    expect(await screen.findByText("No prescribed medications are linked to your account.")).toBeInTheDocument();
+    expect(screen.queryByText("Atorvastatin")).not.toBeInTheDocument();
+    expect(screen.getByTestId("log-medication-dose-btn")).toBeDisabled();
+  });
+
+  it("shows clinical records returned by the API", async () => {
+    global.fetch = jest.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        records: [{
+          id: "record-1",
+          diagnosis: "Seasonal allergy",
+          treatmentPlan: "Follow up in two weeks",
+          notes: null,
+          createdAt: "2026-01-01T10:00:00.000Z",
+          doctor: { user: { name: "Dr. Test" } },
+        }],
+        latestVitals: null,
+      }),
+    } as Response);
+
+    render(<MedicalRecordsView userName="Test Patient" onReturnToOverview={jest.fn()} />);
+    expect(await screen.findByText("Seasonal allergy")).toBeInTheDocument();
+    expect(screen.getByText(/Follow up in two weeks/)).toBeInTheDocument();
+    expect(screen.getByText(/Recorded by Dr\. Test/)).toBeInTheDocument();
   });
 
   it("renders LiveOPDQueueTracker with themed tokens, chamber details, and queue steps", () => {

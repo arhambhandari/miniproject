@@ -108,16 +108,16 @@ export async function GET(req: Request) {
         records,
         latestVitals: latest
           ? {
-              bloodPressure: latest.bloodPressure || "120/80",
-              heartRate: latest.heartRate || "72",
-              bloodSugar: latest.bloodSugar || "94",
-              spo2: latest.spo2 || "99",
-              weight: latest.weight || "68 kg",
-              temperature: latest.temperature || "98.4",
+              bloodPressure: latest.bloodPressure,
+              heartRate: latest.heartRate,
+              bloodSugar: latest.bloodSugar,
+              spo2: latest.spo2,
+              weight: latest.weight,
+              temperature: latest.temperature,
               diagnosis: latest.diagnosis,
               treatmentPlan: latest.treatmentPlan,
               recordedAt: latest.createdAt,
-              doctorName: latest.doctor?.user?.name || "Attending Physician",
+              doctorName: latest.doctor?.user?.name || null,
             }
           : null,
       },

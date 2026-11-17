@@ -25,7 +25,6 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 import Script from "next/script";
-import Image from "next/image";
 import type { Doctor } from "@/types";
 import {
   getRazorpayError,
@@ -41,11 +40,12 @@ import { playPaymentSuccessSound } from "@/lib/sound";
 interface BookingModalProps {
   doctor: Doctor | null;
   onClose: () => void;
+  onBookingSuccess?: () => void;
   initialDate?: string;
   initialDisease?: string;
 }
 
-export function BookingModal({ doctor, onClose, initialDate, initialDisease }: BookingModalProps) {
+export function BookingModal({ doctor, onClose, onBookingSuccess, initialDate, initialDisease }: BookingModalProps) {
   // Quick date options generator (Today, +1 day, +2 days, etc.)
   const quickDates = React.useMemo(() => {
     const dates = [];
@@ -64,7 +64,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
   const [bookingDate, setBookingDate] = useState(initialDate || quickDates[0]?.iso || "");
   const [bookingTime, setBookingTime] = useState("10:30 AM");
   const [patientName, setPatientName] = useState("");
-  const [patientContact, setPatientContact] = useState("+91 98765 43210");
+  const [patientContact, setPatientContact] = useState("");
   const [patientEmail, setPatientEmail] = useState("");
   const [diseaseOverride, setDiseaseOverride] = useState<string | null>(null);
   const disease = diseaseOverride ?? initialDisease ?? "General Health Consultation";
@@ -104,9 +104,13 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
       .then((res) => res.json())
       .then((data) => {
         if (!isActive) return;
-        if (data?.user?.name && !patientName) setPatientName(data.user.name);
-        if (data?.user?.name && !cardHolder) setCardHolder(data.user.name);
-        if (data?.user?.email && !patientEmail) setPatientEmail(data.user.email);
+        if (data?.user?.name) {
+          setPatientName((current) => current || data.user.name);
+          setCardHolder((current) => current || data.user.name);
+        }
+        if (data?.user?.email) {
+          setPatientEmail((current) => current || data.user.email);
+        }
       })
       .catch((error: unknown) => {
         console.warn("Could not prefill booking details from the session:", error);
@@ -339,10 +343,9 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
           date: bookingDate,
           startTime: bookingTime,
           disease: disease || "General Consultation",
-          patientName: patientName || "Verified Patient",
-          patientContact: patientContact || "+91 98765 43210",
+          patientName,
+          patientContact,
           email: patientEmail,
-          fee: doctor?.fee ? `₹${doctor.fee.toLocaleString()}` : "₹1,500",
           paymentId: paymentData.razorpay_payment_id,
           paymentMethod: paymentData.method,
         }),
@@ -352,6 +355,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
         const data = await res.json();
         if (data.emailPreviewUrl) setEmailPreview(data.emailPreviewUrl);
         setModalStep("success");
+        onBookingSuccess?.();
         playPaymentSuccessSound();
         toast.success("Payment verified and appointment confirmed!");
       } else {
@@ -372,7 +376,8 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
     }
   };
 
-  const doctorFee = doctor?.fee || 2000;
+  const doctorFee = doctor?.fee ?? null;
+  const doctorFeeLabel = doctorFee === null ? "Fee not available" : `₹${doctorFee.toLocaleString()}`;
 
   return (
     <>
@@ -466,7 +471,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
                     Consultation Fee
                   </span>
                   <span className="text-xl font-extrabold text-slate-900 dark:text-white">
-                    ₹{doctorFee.toLocaleString()}
+                    {doctorFeeLabel}
                   </span>
                 </div>
               </div>
@@ -621,7 +626,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
                     <input
                       type="tel"
                       required
-                      placeholder="+91 98765 43210"
+                      placeholder="Enter phone number"
                       value={patientContact}
                       onChange={(e) => setPatientContact(e.target.value)}
                       className="w-full h-11 pl-10 pr-4 rounded-xl border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all shadow-xs"
@@ -881,7 +886,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
                   <span>Consultation Fee</span>
                   <span className="font-semibold text-slate-800 dark:text-slate-200">
-                    ₹{doctorFee.toLocaleString()}
+                    {doctorFeeLabel}
                   </span>
                 </div>
                 <div className="flex items-center justify-between text-xs text-slate-600 dark:text-slate-400">
@@ -899,7 +904,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
                 <div className="pt-2 border-t border-slate-200/70 dark:border-slate-700 flex items-center justify-between text-sm font-extrabold text-slate-900 dark:text-white">
                   <span>Total Payable</span>
                   <span className="text-blue-600 dark:text-blue-400 text-base">
-                    ₹{doctorFee.toLocaleString()}
+                    {doctorFeeLabel}
                   </span>
                 </div>
               </div>
@@ -907,14 +912,14 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
               {/* 6. Security Trust Badge */}
               <div className="flex items-center justify-center gap-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
                 <Lock className="size-3.5 text-emerald-500" />
-                <span>Secured by 256-bit Razorpay Encryption • Free Cancellation</span>
+                <span>Payment processed by Razorpay • Cancellation available from your dashboard</span>
               </div>
 
               {/* Submit CTA */}
               <div className="pt-1">
                 <button
                   type="submit"
-                  disabled={isProcessing}
+                  disabled={isProcessing || doctorFee === null}
                   className="w-full h-13 rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-extrabold text-sm shadow-lg shadow-blue-500/25 transition-all flex items-center justify-center gap-2 disabled:opacity-50 cursor-pointer"
                 >
                   {isProcessing ? (
@@ -927,7 +932,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
                         <CreditCard className="size-4" />
                       )}
                       <span>
-                        Pay ₹{doctorFee.toLocaleString()} via {paymentMethod === "upi" ? "UPI" : "Card"} & Confirm
+                        Pay {doctorFeeLabel} via {paymentMethod === "upi" ? "UPI" : "Card"} & Confirm
                       </span>
                       <ChevronRight className="size-4" />
                     </>
@@ -995,13 +1000,13 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-medium">Patient:</span>
                 <span className="font-bold text-slate-800 dark:text-slate-200">
-                  {patientName || "Rahul Sharma"}
+                  {patientName || "Patient"}
                 </span>
               </div>
               <div className="flex justify-between items-center text-xs">
                 <span className="text-slate-400 font-medium">Amount Paid:</span>
                 <span className="font-bold text-emerald-600 dark:text-emerald-400">
-                  ₹{doctorFee.toLocaleString()} (Paid)
+                  {doctorFeeLabel} (Paid)
                 </span>
               </div>
               {confirmedPaymentMethod && (
@@ -1087,7 +1092,7 @@ export function BookingModal({ doctor, onClose, initialDate, initialDisease }: B
           orderId={razorpayOrder?.id || "order_test_pending"}
           amount={doctor.fee || 1500}
           doctorName={doctor.user.name}
-          patientName={patientName || "Verified Patient"}
+          patientName={patientName}
           patientEmail={patientEmail}
           patientContact={patientContact}
           onSuccess={handlePaymentSuccess}
