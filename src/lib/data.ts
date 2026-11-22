@@ -1,4 +1,126 @@
 export const MOCK_DOCTORS = [
+  // Lohegaon, Pune Doctors
+  {
+    id: "doc_lohegaon_1",
+    specialization: "PEDIATRICS",
+    qualifications: "MBBS, DCH, DNB (Pediatrics)",
+    experience: 16,
+    hospitalName: "Sathe Hospital & Child Care Centre, Porwal Road, Lohegaon, Pune",
+    contactNumber: "+91 98224 81920",
+    satisfaction: 96,
+    nextAvailable: "TODAY",
+    fee: 500,
+    user: {
+      name: "Dr. Vishal Sathe",
+      image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400",
+    },
+  },
+  {
+    id: "doc_lohegaon_2",
+    specialization: "GYNECOLOGY",
+    qualifications: "MBBS, DGO, Fellowship in Cosmetic Gynecology",
+    experience: 20,
+    hospitalName: "Sathe Hospital, Kutwal Colony, Lohegaon, Pune",
+    contactNumber: "+91 98220 54110",
+    satisfaction: 94,
+    nextAvailable: "TOMORROW",
+    fee: 600,
+    user: {
+      name: "Dr. Kanchan Sathe",
+      image: "https://images.unsplash.com/photo-1594824813628-98e9be580214?auto=format&fit=crop&q=80&w=400",
+    },
+  },
+  {
+    id: "doc_lohegaon_3",
+    specialization: "DENTISTRY",
+    qualifications: "BDS, MDS (Prosthodontics & Implantology)",
+    experience: 14,
+    hospitalName: "Mankar's Dental Clinic & Implant Centre, Lohegaon, Pune",
+    contactNumber: "+91 98902 33418",
+    satisfaction: 95,
+    nextAvailable: "TODAY",
+    fee: 350,
+    user: {
+      name: "Dr. Piyush Mankar",
+      image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400",
+    },
+  },
+  {
+    id: "doc_lohegaon_4",
+    specialization: "DENTISTRY",
+    qualifications: "BDS, Cosmetic Dental Surgeon",
+    experience: 12,
+    hospitalName: "Padmanaabh Dental Clinic & Implant Centre, Lohegaon, Pune",
+    contactNumber: "+91 98811 77620",
+    satisfaction: 98,
+    nextAvailable: "OCT 25",
+    fee: 300,
+    user: {
+      name: "Dr. Neha Deshpande Tambe",
+      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
+    },
+  },
+  {
+    id: "doc_lohegaon_5",
+    specialization: "PEDIATRICS",
+    qualifications: "MBBS, DCH, Pediatrician & Neonatologist",
+    experience: 15,
+    hospitalName: "Dr. Sawant's Mother & Child Care Clinic, Dhanori-Lohegaon Road, Pune",
+    contactNumber: "+91 98601 22940",
+    satisfaction: 94,
+    nextAvailable: "TODAY",
+    fee: 500,
+    user: {
+      name: "Dr. Pandurang Sawant",
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
+    },
+  },
+  {
+    id: "doc_lohegaon_6",
+    specialization: "GYNECOLOGY",
+    qualifications: "BAMS, MS (Ayurvedic Obstetrics & Gynecology)",
+    experience: 12,
+    hospitalName: "Dr. Sawant's Mother & Child Care Clinic, Dhanori-Lohegaon Road, Pune",
+    contactNumber: "+91 98601 22941",
+    satisfaction: 92,
+    nextAvailable: "TOMORROW",
+    fee: 500,
+    user: {
+      name: "Dr. Laxmi Chavan Sawant",
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
+    },
+  },
+  {
+    id: "doc_lohegaon_7",
+    specialization: "ORTHOPEDICS",
+    qualifications: "MBBS, MS (Orthopedics), DNB",
+    experience: 22,
+    hospitalName: "Lotus Clinic Centre for Orthopaedics & Gynaecology, Dhanori-Lohegaon Road, Pune",
+    contactNumber: "+91 98230 45678",
+    satisfaction: 96,
+    nextAvailable: "OCT 26",
+    fee: 600,
+    user: {
+      name: "Dr. Anirudha Deshpande",
+      image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400",
+    },
+  },
+  {
+    id: "doc_lohegaon_8",
+    specialization: "ORTHOPEDICS",
+    qualifications: "MBBS, D.Ortho, Joint Replacement Consultant",
+    experience: 19,
+    hospitalName: "Sparsh Orthopaedic & Multi-Speciality Clinic, Lohegaon-Dhanori Marg, Pune",
+    contactNumber: "+91 98901 98210",
+    satisfaction: 94,
+    nextAvailable: "OCT 27",
+    fee: 500,
+    user: {
+      name: "Dr. Satish Uchale",
+      image: "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400",
+    },
+  },
+  // Specialty Referral Network
   {
     id: "doc_1",
     specialization: "NEURO-ONCOLOGY",
@@ -11,8 +133,8 @@ export const MOCK_DOCTORS = [
     fee: 2000,
     user: {
       name: "Dr. Aarav Mehta",
-      image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400"
-    }
+      image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400",
+    },
   },
   {
     id: "doc_2",
@@ -26,8 +148,8 @@ export const MOCK_DOCTORS = [
     fee: 2500,
     user: {
       name: "Dr. Vikramaditya Rathore",
-      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400"
-    }
+      image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
+    },
   },
   {
     id: "doc_3",
@@ -41,8 +163,8 @@ export const MOCK_DOCTORS = [
     fee: 1800,
     user: {
       name: "Dr. Ananya Sengupta",
-      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400"
-    }
+      image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
+    },
   },
   {
     id: "doc_4",
@@ -56,8 +178,8 @@ export const MOCK_DOCTORS = [
     fee: 2200,
     user: {
       name: "Dr. Rajesh Iyer",
-      image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400"
-    }
+      image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400",
+    },
   },
   {
     id: "doc_5",
@@ -71,8 +193,8 @@ export const MOCK_DOCTORS = [
     fee: 1200,
     user: {
       name: "Dr. Priya Patel",
-      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400"
-    }
+      image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
+    },
   },
   {
     id: "doc_6",
@@ -86,7 +208,7 @@ export const MOCK_DOCTORS = [
     fee: 1500,
     user: {
       name: "Dr. Rohan Banerjee",
-      image: "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400"
-    }
-  }
+      image: "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400",
+    },
+  },
 ];
