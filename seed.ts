@@ -18,7 +18,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 96,
     nextAvailable: "TODAY",
     fee: 500,
-    image: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?auto=format&fit=crop&q=80&w=400",
+    image: "/images/doctors/dr-vishal-sathe.png",
     bio: "Senior Pediatrician and Child Specialist on Porwal Road, Lohegaon. Renowned for prompt diagnostic accuracy, newborn care, gentle pediatric vaccinations, and compassionate family healthcare across Lohegaon and Dhanori."
   },
   {
@@ -33,7 +33,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 94,
     nextAvailable: "TOMORROW",
     fee: 600,
-    image: "https://images.unsplash.com/photo-1594824813628-98e9be580214?auto=format&fit=crop&q=80&w=400",
+    image: "/images/doctors/dr-kanchan-sathe.png",
     bio: "Senior Consultant Gynecologist and Obstetrician with over 20 years of clinical excellence in Lohegaon, Pune. Expert in high-risk pregnancy management, PCOS/PCOD care, infertility counseling, and women's health."
   },
   {
@@ -48,7 +48,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 95,
     nextAvailable: "TODAY",
     fee: 350,
-    image: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?auto=format&fit=crop&q=80&w=400",
+    image: "/images/doctors/dr-piyush-mankar.jpg",
     bio: "Chief Dental Surgeon and Implantologist at Mankar's Dental Clinic, Lohegaon. Specialist in painless root canal treatments, dental implants, digital smile design, and orthodontic procedures with over 94% positive Practo recommendations."
   },
   {
@@ -63,7 +63,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 98,
     nextAvailable: "OCT 25",
     fee: 300,
-    image: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?auto=format&fit=crop&q=80&w=400",
+    image: "/images/doctors/dr-neha-deshpande-tambe.png",
     bio: "Dedicated dental practitioner at Padmanaabh Dental Clinic, Lohegaon. Top-rated for preventive pediatric dental care, teeth whitening, crowns, bridges, and gentle restorative treatments."
   },
   {
@@ -78,7 +78,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 94,
     nextAvailable: "TODAY",
     fee: 500,
-    image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400",
+    image: "/images/doctors/dr-pandurang-sawant.png",
     bio: "Renowned Pediatrician & Neonatologist serving families along the Dhanori-Lohegaon corridor. Highly rated for rational medication, avoiding unnecessary antibiotics, newborn screening, and asthma management."
   },
   {
@@ -93,7 +93,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 92,
     nextAvailable: "TOMORROW",
     fee: 500,
-    image: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?auto=format&fit=crop&q=80&w=400",
+    image: "/images/doctors/dr-laxmi-sawant.png",
     bio: "Consultant Gynecologist & Infertility Specialist combining traditional wellness with modern clinical obstetrics. Specializes in antenatal counseling, irregular menstrual cycles, and natural preconception guidance."
   },
   {
@@ -108,7 +108,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 96,
     nextAvailable: "OCT 26",
     fee: 600,
-    image: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?auto=format&fit=crop&q=80&w=400",
+    image: "/images/doctors/dr-anirudha-deshpande.jpg",
     bio: "Senior Consultant Orthopedic Surgeon with over 22 years of surgical expertise. Specializes in knee and hip joint preservation, spine and slip-disc management, fracture trauma, and sports injury rehabilitation."
   },
   {
@@ -123,7 +123,7 @@ const MOCK_DOCTORS_SEED = [
     satisfaction: 94,
     nextAvailable: "OCT 27",
     fee: 500,
-    image: "https://images.unsplash.com/photo-1622902046580-2b47f47f5471?auto=format&fit=crop&q=80&w=400",
+    image: "/images/doctors/dr-satish-uchale.jpg",
     bio: "Consultant Orthopedist and Trauma Surgeon serving Lohegaon & Dhanori. Renowned for fracture management, arthritis care, bone density screenings, and sports rehabilitation."
   }
 ];
