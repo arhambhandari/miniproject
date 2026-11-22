@@ -1,14 +1,39 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { HeartPulse, Menu, X } from "lucide-react";
+import { HeartPulse, Menu, X, LayoutDashboard, LogOut } from "lucide-react";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { useLanguage } from "@/components/LanguageContext";
+import { signOut } from "next-auth/react";
+
+interface UserSession {
+  user?: {
+    name?: string | null;
+    email?: string | null;
+    role?: string | null;
+  };
+}
 
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { t } = useLanguage();
+  const [session, setSession] = useState<UserSession | null>(null);
+
+  useEffect(() => {
+    fetch("/api/auth/session")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.user) {
+          setSession(data);
+        } else {
+          setSession(null);
+        }
+      })
+      .catch(() => setSession(null));
+  }, []);
+
+  const dashboardUrl = session?.user?.role === "DOCTOR" ? "/doctor/dashboard" : "/dashboard";
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/80 backdrop-blur-md dark:bg-slate-900/80 dark:border-slate-800 transition-colors duration-200">
@@ -41,18 +66,39 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-3">
           <LanguageSwitcher />
           <ThemeToggle />
-          <Link
-            href="/login"
-            className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
-          >
-            {t('login')}
-          </Link>
-          <Link
-            href="/register"
-            className="rounded-full bg-blue-600 hover:bg-blue-700 px-5 py-2 text-sm font-medium text-white transition-all duration-200 shadow-sm shadow-blue-500/25 hover:shadow-md hover:shadow-blue-500/35 hover:scale-[1.02] active:scale-[0.98]"
-          >
-            {t('get_started')}
-          </Link>
+          {session?.user ? (
+            <div className="flex items-center gap-2">
+              <Link
+                href={dashboardUrl}
+                className="inline-flex items-center gap-1.5 rounded-full bg-blue-600 hover:bg-blue-700 px-4 py-2 text-sm font-medium text-white transition-all duration-200 shadow-sm shadow-blue-500/25 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+              >
+                <LayoutDashboard className="size-4" />
+                <span>{session.user.role === "DOCTOR" ? "Doctor Portal" : "Dashboard"}</span>
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                title="Sign out"
+                className="p-2 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <LogOut className="size-4" />
+              </button>
+            </div>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                className="text-sm font-medium text-slate-600 dark:text-slate-300 hover:text-blue-600 dark:hover:text-white px-3 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-all"
+              >
+                {t('login')}
+              </Link>
+              <Link
+                href="/register"
+                className="rounded-full bg-blue-600 hover:bg-blue-700 px-5 py-2 text-sm font-medium text-white transition-all duration-200 shadow-sm shadow-blue-500/25 hover:shadow-md hover:shadow-blue-500/35 hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {t('get_started')}
+              </Link>
+            </>
+          )}
         </div>
 
         <button
@@ -80,12 +126,34 @@ export function Navbar() {
           <LanguageSwitcher />
         </div>
         <div className="flex flex-col gap-2 pt-2">
-          <Link href="/login" className="flex justify-center rounded-xl bg-slate-100 dark:bg-slate-800 py-3 text-sm font-medium text-slate-900 dark:text-white hover:bg-slate-200 transition-colors">
-            {t('login')}
-          </Link>
-          <Link href="/register" className="flex justify-center rounded-xl bg-blue-600 hover:bg-blue-700 py-3 text-sm font-medium text-white shadow-md shadow-blue-500/20 transition-all">
-            {t('get_started')}
-          </Link>
+          {session?.user ? (
+            <>
+              <Link
+                href={dashboardUrl}
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 py-3 text-sm font-medium text-white shadow-md shadow-blue-500/20 transition-all"
+              >
+                <LayoutDashboard className="size-4" />
+                <span>{session.user.role === "DOCTOR" ? "Doctor Portal" : "Go to Dashboard"}</span>
+              </Link>
+              <button
+                onClick={() => signOut({ callbackUrl: "/login" })}
+                className="flex items-center justify-center gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 py-3 text-sm font-medium text-rose-600 dark:text-rose-400 hover:bg-slate-200 transition-colors"
+              >
+                <LogOut className="size-4" />
+                <span>Sign Out</span>
+              </button>
+            </>
+          ) : (
+            <>
+              <Link href="/login" className="flex justify-center rounded-xl bg-slate-100 dark:bg-slate-800 py-3 text-sm font-medium text-slate-900 dark:text-white hover:bg-slate-200 transition-colors">
+                {t('login')}
+              </Link>
+              <Link href="/register" className="flex justify-center rounded-xl bg-blue-600 hover:bg-blue-700 py-3 text-sm font-medium text-white shadow-md shadow-blue-500/20 transition-all">
+                {t('get_started')}
+              </Link>
+            </>
+          )}
         </div>
       </div>
     </header>
